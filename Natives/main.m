@@ -337,3 +337,8 @@ int main(int argc, char *argv[]) {
         return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
     }
 }
+
+// This is a workaround for the linker error: "_UISolariumEnabled" is undefined
+BOOL _UISolariumEnabled(void) {
+    return NO;
+}
