@@ -49,7 +49,7 @@ jobs:
         run: |
           brew install ldid wget make
           sudo mkdir -p /usr/local/bin
-          # Делаем симлинк, чтобы gmake вызывался без проблем по старым путям [cite: 15]
+          # Делаем симлинк, чтобы gmake вызывался без проблем по старым путям
           sudo ln -sf /opt/homebrew/bin/gmake /usr/local/bin/gmake
 
       - name: Get gl4es latest commit hash
@@ -69,6 +69,8 @@ jobs:
         run: |
           echo '#import <mach/mach.h>' | cat - Natives/JavaLauncher.m > temp && mv temp Natives/JavaLauncher.m
 
+          printf "\n#include <objc/objc.h>\nBOOL _UISolariumEnabled = NO;\n" >> Natives/main.m
+
           JDK_BASE_PATH="${{ steps.setup-java.outputs.path }}"
           export PATH="$JDK_BASE_PATH/bin:/opt/homebrew/bin:$PATH"
           export JAVA_HOME="$JDK_BASE_PATH"
@@ -85,6 +87,7 @@ jobs:
           SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="
 
           if [ "${{ matrix.platform_name }}" == "ios" ]; then
+            # Сборка обычного IPA и TrollStore TIPA (с JIT правами)
             gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} $SIGN_FLAGS
             gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 $SIGN_FLAGS
           elif [ "${{ matrix.platform_name }}" == "tvos" ]; then
