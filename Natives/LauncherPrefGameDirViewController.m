@@ -14,7 +14,6 @@
 
 - (void)viewDidLoad
 {
-    [super iPad];
     [super viewDidLoad];
     [self setTitle:localize(@"preference.title.game_directory", nil)];
 

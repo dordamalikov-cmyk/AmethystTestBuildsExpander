@@ -242,7 +242,6 @@
                 @"icon": @"cursorarrow.click",
                 @"hasDetail": @YES,
                 @"type": self.typeSwitch,
-                }
             },
             @{@"key": @"gesture_hotbar",
                 @"icon": @"hand.tap",
