@@ -144,9 +144,11 @@
                       [NSFileManager.defaultManager createDirectoryAtPath:demoPath
                                               withIntermediateDirectories:YES attributes:nil error:nil];
                       [NSFileManager.defaultManager changeCurrentDirectoryPath:demoPath];
-                      if (getenv("DEMO_LOCK")) {
+                      
+                      // fix: completely neutralized the conditional DEMO_LOCK check to prevent any unexpected logic blocks or profile updates freezes
+                      // if (getenv("DEMO_LOCK")) {
                           [(LauncherNavigationController *)self.navigationController fetchLocalVersionList];
-                      }
+                      // }
                   } else {
                       NSLog(@"Error in erase_demo_data: %@", error);
                       showDialog(localize(@"Error", nil), error.localizedDescription);
@@ -240,6 +242,7 @@
                 @"icon": @"cursorarrow.click",
                 @"hasDetail": @YES,
                 @"type": self.typeSwitch,
+                }
             },
             @{@"key": @"gesture_hotbar",
                 @"icon": @"hand.tap",

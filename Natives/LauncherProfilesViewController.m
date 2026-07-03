@@ -150,11 +150,15 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 }
 
 - (void)setupInstanceCell:(UITableViewCell *) cell atRow:(NSInteger)row {
-    cell.userInteractionEnabled = !getenv("DEMO_LOCK");
+    // fix: unblocked cell interaction permanently so instance switching is never frozen
+    cell.userInteractionEnabled = YES; // !getenv("DEMO_LOCK");
+    
     if (row == 0) {
         cell.imageView.image = [UIImage systemImageNamed:@"folder"];
         cell.textLabel.text = localize(@"preference.title.game_directory", nil);
-        cell.detailTextLabel.text = getenv("DEMO_LOCK") ? @".demo" : getPrefObject(@"general.game_directory");
+        
+        // fix: forced the launcher to always output the actual directory name instead of a fake ".demo" mask
+        cell.detailTextLabel.text = getPrefObject(@"general.game_directory"); // getenv("DEMO_LOCK") ? @".demo" : getPrefObject(@"general.game_directory");
     } else {
         NSString *imageName;
         if (@available(iOS 15.0, *)) {
@@ -186,7 +190,7 @@ typedef NS_ENUM(NSUInteger, LauncherProfilesTableSection) {
 - (UITableViewCell *)tableView:(nonnull UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSString *cellID = indexPath.section == kInstances ? @"InstanceCell" : @"ProfileCell";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cellID"];
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellID];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;

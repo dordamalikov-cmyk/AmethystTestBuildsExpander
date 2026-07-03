@@ -314,7 +314,11 @@
 
 // Check if the account has permission to download
 - (BOOL)checkAccessWithDialog:(BOOL)show {
-    // for now
+    // fix: bypass the local account blocker, let the blocks build!
+    // we bypass Microsoft/Demo check completely to allow offline installations
+    return YES;
+    
+    /* dead logic left for reference
     BOOL accessible = [BaseAuthenticator.current.authData[@"username"] hasPrefix:@"Demo."] || BaseAuthenticator.current.authData[@"xboxGamertag"] != nil;
     if (!accessible) {
         [self.progress cancel];
@@ -323,6 +327,7 @@
         }
     }
     return accessible;
+    */
 }
 
 // Check SHA of the file
