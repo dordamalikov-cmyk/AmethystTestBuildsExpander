@@ -79,10 +79,10 @@
 "login.option.microsoft" = "Microsoft account";
 "login.option.local" = "Lokal na account";
 
-"login.warn.title.demomode" = "Your account is Demo";
-"login.warn.message.demomode" = "Bilang kapalit sa offline at lokal na mode, magbibigay-daan sa iyo ang demo mode na mag-sign in sa isang Microsoft account na hindi nagmamay-ari ng laro at laruin ang pagsubok ng Java Edition, na ipinakilala sa 1.3.1 at mas bagong mga bersyon.";
+"login.warn.title.demomode" = "Demo Account ang Natuklasan / Bypass ay Aktivado";
+"login.warn.message.demomode" = "Natuklasan ang walang-lisensyang Microsoft account, ngunit ang lahat ng paghihigpit sa trial ay ganap nang tinanggal! Opisyal na ang mga demo account ay limitado lamang sa trial para sa mga bersyon 1.3.1 at mas bago. Hindi na ngayon — tinitiyak ng aming mga pagbabago na hindi lamang ang mga lumang legacy na bersyon, kundi ang lahat ng bersyon ng Minecraft ay ganap nang naka-unlock at maaaring laruin nang walang lisensya (maliban sa mga premium server). Mag-enjoy nang walang limitasyon!";
 
-"login.warn.title.localmode" = "Ang offline mode ngayon nay' Local mode.";
+"login.warn.title.localmode" = "Local Profile ay Aktivado / Lumipat sa Unrestricted Access";
 
 "login.msa.error.xsts.noxboxacc" = "Ang isang Xbox profile ay hindi nakarehistro para sa Microsoft account na ito. Pakitiyak na nakagawa ka ng Xbox profile.\nError code: 2148916233";
 "login.msa.error.xsts.noxbox" = "Kasalukuyang hindi available ang Xbox Live sa iyong bansa.\nError code: 2148916235";
@@ -186,3 +186,4 @@
 "preference.title.debug_show_layout_overlap" = "Ipakita ang layout na magkakapatong";
 "preference.detail.debug_show_layout_overlap" = "I-overlay ang bawat view gamit ang isang transparent na kulay upang ipakita ang mga magkakapatong na view.";
 "controller_configurator.playstation.title.named_back" = "Iselekta";
+"login.warn.message.localmode" = "Natuklasan ang local mode, matagumpay na nailipat ang lahat ng system sa maximum na kalayaan. Ang lahat ng pagsusuri sa lisensya ay ganap nang nalaktawan at nabago — maaari mo nang laruin ang Minecraft gaya ng dati (maliban sa mga opisyal na lisensyadong premium server). Ang lahat ng paghihigpit ay ganap na itinigil.";

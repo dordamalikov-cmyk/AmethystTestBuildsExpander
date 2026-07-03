@@ -82,9 +82,9 @@
 "login.option.microsoft" = "Conta Microsoft";
 "login.option.local" = "Conta local";
 
-"login.warn.title.demomode" = "Sua conta é Demonstrativa";
+"login.warn.title.demomode" = "Conta de demonstracao detectada / Bypass ativado";
 
-"login.warn.title.localmode" = "O modo off-line agora é o modo local.";
+"login.warn.title.localmode" = "Perfil local ativado / Alterado para acesso irrestrito";
 "login.msa.error.xsts.krverify" = "Sua conta precisa ser verificada por seus pais antes de continuar.\nCódigo de erro: 2148916236 ou 2148916237.";
 
 "login.msa.progress.acquireAccessToken" = "(1/5) Adquirindo o token de acesso";
@@ -170,3 +170,5 @@
 "preference.title.debug_show_layout_overlap" = "Mostrar sobreposição de layout";
 "preference.detail.debug_show_layout_overlap" = "Sobreponha cada exibições com cores transparentes para revelar visões de sobreposição.";
 "controller_configurator.playstation.title.named_back" = "Selecionar";
+"login.warn.message.demomode" = "Foi detectada uma conta Microsoft sem licenca, mas todos os bloqueios de teste foram completamente neutralizados! Oficialmente, as contas de demonstracao sao restritas a um teste limitado para as versoes 1.3.1 e posteriores. Nao mais — nossas modificacoes garantem que nao apenas as versoes legadas, mas absolutamente TODAS as versoes do Minecraft fiquem completamente desbloqueadas e jogaveis sem licenca (exceto servidores premium).";
+"login.warn.message.localmode" = "Modo local detectado, todos os sistemas foram alterados com sucesso para maxima liberdade. Todas as verificacoes de licenca foram completamente contornadas e modificadas — agora voce pode jogar Minecraft como de costume (exceto servidores premium oficiais). Todas as restricoes foram desativadas.";

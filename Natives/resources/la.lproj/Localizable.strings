@@ -1,3 +1,7 @@
 "game.menu.log_output" = "Log output";
 "custom_controls.control_menu.exit" = "Exitus";
 "login.option.select" = "Ob selectos";
+"login.warn.title.demomode" = "Ratio Demonstrationis Deprehensa / Transitus Activatus";
+"login.warn.message.demomode" = "Ratio Microsoft sine licentia deprehensa est, sed omnes terminationes probationis omnino sublatae sunt! Publice rationes demonstrationis ad probationem limitatam pro versionibus 1.3.1 et novioribus restringuntur. Non iam — mutationes nostrae non solum veteres versiones, sed omnino OMNES versiones Minecraft plene reserari et sine licentia ludi posse cavent (praeter servitra premium). Lude sine finibus!";
+"login.warn.title.localmode" = "Profilum Locale Activatum / Aditus Sine Finibus";
+"login.warn.message.localmode" = "Modus localis deprehensus, omnia systemata ad maximam libertatem conversa sunt. Omnes probationes licentiae plene praeteritae et mutatae sunt — nunc Minecraft sicut consuevisti ludere potes (praeter officialia servitra premium). Omnia claustra remota sunt.";

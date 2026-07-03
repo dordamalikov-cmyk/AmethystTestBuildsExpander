@@ -80,10 +80,10 @@
 "login.option.microsoft" = "Microsoft アカウント";
 "login.option.local" = "ローカルアカウント";
 
-"login.warn.title.demomode" = "あなたのアカウントはデモ版です";
-"login.warn.message.demomode" = "オフラインモードとローカルモードへの置き換えとして デモモードでは、ゲームを所有していないMicrosoftアカウントにサインインし、Java Editionの試用版をプレイすることができます。 1.3で導入されました。以前のバージョンでは、公式ランチャーがこれらの制限を設けていないため、以前のバージョンではフルゲームが含まれています。 このオフラインモードからの移行の詳細については、当社のウェブサイトをご覧ください。";
+"login.warn.title.demomode" = "デモアカウントを検出 / バイパス有効化";
+"login.warn.message.demomode" = "ライセンスのないMicrosoftアカウントが検出されましたが、すべての体験版制限が完全に無効化されました！公式には、デモアカウントはバージョン1.3.1以降の制限された体験版に制限されています。しかし、もうそんなことはありません。当社の修正により、古いレガシーバージョンだけでなく、完全にすべてのMinecraftバージョンがライセンスなしでプレイ可能です（プレミアムサーバーを除く）。制限なしでお楽しみください！";
 
-"login.warn.title.localmode" = "オフラインモードは現在ローカルモードです。";
+"login.warn.title.localmode" = "ローカルプロファイル有効化 / 无制限アクセス";
 
 "login.msa.error.xsts.noxboxacc" = "このMicrosoftアカウントにXboxプロファイルが登録されていません。Xboxプロファイルを作成したことを確認してください。\nエラーコード: 2148916233";
 "login.msa.error.xsts.noxbox" = "現在お住まいの国では Xbox Live がご利用いただけません。\nエラーコード: 2148916235";
@@ -187,3 +187,4 @@
 "preference.title.debug_show_layout_overlap" = "レイアウト重複を表示";
 "preference.detail.debug_show_layout_overlap" = "透明な色ですべてのビューをオーバーレイし、重複するビューを表示します。";
 "controller_configurator.playstation.title.named_back" = "選択...";
+"login.warn.message.localmode" = "ローカルモードが検出され、すべてのシステムが最大限の自由に切り替わりました。すべてのライセンスチェックが完全にバイパスおよび修正されました。公式ライセンスのプレミアムサーバーを除き、通常通りMinecraftをプレイできます。すべての制限が解除されました。";

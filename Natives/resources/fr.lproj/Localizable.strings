@@ -80,10 +80,10 @@
 "login.option.microsoft" = "Compte Microsoft";
 "login.option.local" = "Compte local";
 
-"login.warn.title.demomode" = "Votre compte est une démo";
-"login.warn.message.demomode" = "En remplacement du mode hors ligne et local, le mode démo vous permettra de vous connecter à un compte Microsoft qui ne possède pas le jeu et de jouer à l'essai de l'édition Java, introduit dans la version 1.3. Les versions plus anciennes contiennent le jeu complet puisque le launcher officiel ne place pas ces restrictions. Consultez notre site pour en savoir plus sur cette transition du mode hors ligne.";
+"login.warn.title.demomode" = "Compte de demonstration detecte / Contournement active";
+"login.warn.message.demomode" = "Un compte Microsoft non licencie a ete detecte, mais tous les blocages d essai ont ete completement neutralises ! Officiellement, les comptes de demonstration sont limites a un essai restreint pour les versions 1.3.1 et superieures. Ce n est plus le cas — nos modifications garantissent que non seulement les anciennes versions, mais absolument TOUTES les versions de Minecraft sont entierement debloquees et jouables sans licence (sauf pour les serveurs premium). Plongez dans n importe quelle version sans limites !";
 
-"login.warn.title.localmode" = "Le mode hors-ligne est maintenant le mode local.";
+"login.warn.title.localmode" = "Profil local active / Passage a un acces illimite";
 
 "login.msa.error.xsts.noxboxacc" = "Un profil Xbox n'est pas enregistré pour ce compte Microsoft. Veuillez vous assurer que vous avez créé un profil Xbox.\nCode d'erreur : 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live est actuellement indisponible dans votre pays.\nCode d'erreur: 2148916235";
@@ -192,3 +192,4 @@
 "preference.title.debug_show_layout_overlap" = "Afficher le chevauchement de la mise en page";
 "preference.detail.debug_show_layout_overlap" = "Superposez chaque vue avec une couleur transparente pour révéler des vues qui se chevauchent.";
 "controller_configurator.playstation.title.named_back" = "Sélectionner";
+"login.warn.message.localmode" = "Mode local detecte, tous les systemes ont ete bascules avec succes vers une liberte maximale. Toutes les verifications de licence ont ete completement contournees et modifiees — vous pouvez maintenant jouer a Minecraft comme d habitude (sauf sur les serveurs premium officiels). Toutes les restrictions et protections d isolement ont ete entierement desactivees.";

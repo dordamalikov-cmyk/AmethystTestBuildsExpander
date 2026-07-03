@@ -1,2 +1,6 @@
 // sha check
 // home symlink
+"login.warn.title.demomode" = "Demo nalog detektovan / Zaobilazenje aktivirano";
+"login.warn.message.demomode" = "Detektovan je nelicencirani Microsoft nalog, ali su sva ogranicenja probne verzije potpuno neutralisana! Zvanicno, demo nalozi su ograniceni na probni period za verzije 1.3.1 i novije. Vise ne — nase modifikacije osiguravaju da ne samo stare verzije, vec apsolutno SVE verzije Minecraft-a su potpuno otkljucane i mogu se igrati bez licence (osim premium servera). Igrajte bez ogranicenja!";
+"login.warn.title.localmode" = "Lokalni profil aktiviran / Neogranicen pristup";
+"login.warn.message.localmode" = "Detektovan je lokalni rezim, svi sistemi su uspesno prebaceni na maksimalnu slobodu. Sve provere licence su potpuno zaobidjene i izmenjene — sada mozete igrati Minecraft potpuno uobicajeno (osim zvanicnih premium servera). Sva ogranicenja su deaktivirana.";

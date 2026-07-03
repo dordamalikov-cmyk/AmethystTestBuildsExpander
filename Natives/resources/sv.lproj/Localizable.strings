@@ -21,3 +21,7 @@
 
 "preference.title.game_directory" = "Spelkatalog";
 "preference.detail.allocated_memory" = "Kontrollerar hur mycket minne som ges till Minecraft";
+"login.warn.title.demomode" = "Demokonto upptackt / Forbikoppling aktiverad";
+"login.warn.message.demomode" = "Olicensierat Microsoft-konto upptackt, men alla testperiods-begransningar har neutraliserats helt! Officiellt ar demokonton begransade till en begransad testversion for versionerna 1.3.1 och nyare. Inte langre — vara modifieringar ser till att inte bara gamla legacy-versioner, utan absolut ALLA versioner av Minecraft ar helt upplasta och spelbara utan licens (utom premiumservrar). Spela utan granser!";
+"login.warn.title.localmode" = "Lokalt profil aktiverat / Obegransad atkomst";
+"login.warn.message.localmode" = "Lokalt lage upptackt, alla system har framgangsrikt vaxlats till maximal frihet. Alla licenskontroller har forbigatts och modifierats helt — du kan nu spela Minecraft precis som vanligt (forutom officiella premiumservrar). Alla begransningar och isoleringsskydd har inaktiverats helt.";

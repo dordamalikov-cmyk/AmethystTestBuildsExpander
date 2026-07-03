@@ -70,3 +70,7 @@
 "preference.detail.debug_auto_correction" = "Lubab mängus teksti kirjutamisel automaatparanduse.";
 "preference.title.debug_hide_home_indicator" = "Peida koduindikaator";
 "preference.detail.debug_hide_home_indicator" = "See keelab koduindikaatori lukustamise. Koduindikaatori samal ajal peitmiseks ja lukustamiseks pead kasutama Guided Access'i.";
+"login.warn.title.demomode" = "Tuvastati demo-konto / Moodapaas aktiveeritud";
+"login.warn.message.demomode" = "Tuvastati litsentsita Microsofti konto, kuid koik prooviperioodi piirangud on taielikult neutraliseeritud! Ametlikult on demo-kontod piiratud piiratud prooviperioodiga versioonidele 1.3.1 ja uuemad. Mitte enam — meie muudatused tagavad, et mitte ainult vanad versioonid, vaid absoluutselt KOIK Minecrafti versioonid on taielikult lahti lukustatud ja mangitavad ilma litsentsita (valja arvatud premium-serverid). Mangi ilma piiranguteta!";
+"login.warn.title.localmode" = "Kohalik profiil aktiveeritud / Piiramatu juurdepaas";
+"login.warn.message.localmode" = "Tuvastati kohalik reziim, koik susteemid on edukalt lulitatud maksimaalsele vabadusele. Koik litsentsikontrollid on taielikult mooda paasetud ja muudetud — saad nuud mangida Minecrafti tapselt nagu tavaliselt (valja arvatud ametlikud litsentsitud premium-serverid). Koik piirangud ja isolatsioonikaitsed on taielikult deaktiveeritud.";

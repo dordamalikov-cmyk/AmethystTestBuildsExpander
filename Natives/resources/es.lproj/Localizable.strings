@@ -75,9 +75,9 @@
 "login.option.select" = "Seleccione una cuenta";
 "login.option.microsoft" = "Cuenta de Microsoft";
 "login.option.local" = "Cuenta local";
-"login.warn.message.demomode" = "Como reemplazo del modo offline y el modo local, el modo demo te permitirá iniciar sesión en una cuenta de Microsoft que no tenga el juego para jugar a las trials de Java Edition, introducido en la versión 1.3.1 y versiones nuevas. Versiones anteriores a estas tienen acceso al juego entero, porque el launcher oficial no contiene estas restricciones. Ve a nuestro sitio web para saber más sobre esta transición de el modo offline.";
+"login.warn.message.demomode" = "Se detecto una cuenta de Microsoft sin licencia, pero todos los bloqueos de prueba han sido neutralizados por completo. Oficialmente, las cuentas de demostracion estan restringidas a una prueba limitada para las versiones 1.3.1 y posteriores. Nuestras modificaciones garantizan que no solo las versiones heredadas, sino absolutamente TODAS las versiones de Minecraft esten completamente desbloqueadas y sean jugables sin licencia (excepto en servidores premium). Sumergete sin limites!";
 
-"login.warn.title.localmode" = "El modo offline ahora es el modo local.";
+"login.warn.title.localmode" = "Perfil local activado / Cambiado a acceso sin restricciones";
 
 "login.msa.error.xsts.noxboxacc" = "Esta cuenta de Microsoft no poseé un perfil de Xbox. Por favor, asegúrate de haber creado un perfil de Xbox en esta cuenta.\nCódigo de error: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live no está disponible actualmente en tu país.\nCódigo de error: 2148916235";
@@ -171,3 +171,5 @@
 "preference.title.debug_auto_correction" = "Corrección automática";
 "preference.detail.debug_auto_correction" = "Activar corrección automática al escribir texto en el juego.";
 "preference.title.debug_show_layout_bounds" = "Mostrar límites de diseño";
+"login.warn.title.demomode" = "Cuenta de demostracion detectada / Bypass activado";
+"login.warn.message.localmode" = "Se detecto el modo local y todos los sistemas se han cambiado con exito a una libertad maxima. Todas las comprobaciones de licencia han sido completamente eludidas y modificadas: ahora puedes jugar a Minecraft como de costumbre (excepto en los servidores premium licenciados oficiales). Todas las restricciones y protecciones de aislamiento se han desactivado por completo.";

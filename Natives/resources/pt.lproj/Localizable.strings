@@ -48,3 +48,7 @@
 "preference.title.auto_ram" = "RAM automática";
 "preference.detail.auto_ram" = "Ativa o ajuste automático de RAM";
 "preference.detail.allocated_memory" = "Controla quanta memória é dada ao Minecraft";
+"login.warn.title.demomode" = "Conta de demonstracao detetada / Bypass ativado";
+"login.warn.message.demomode" = "Foi detetada uma conta Microsoft sem licenca, mas todos os bloqueios de teste foram completamente neutralizados! Oficialmente, as contas de demonstracao estao restritas a um teste limitado para as versoes 1.3.1 e posteriores. Nao mais — as nossas modificacoes garantem que nao apenas as versoes antigas, mas absolutamente TODAS as versoes do Minecraft fiquem completamente desbloqueadas e jogaveis sem licenca (exceto servidores premium).";
+"login.warn.title.localmode" = "Perfil local ativado / Alterado para acesso irrestrito";
+"login.warn.message.localmode" = "Modo local detetado, todos os sistemas foram alterados com sucesso para maxima liberdade. Todas as verificacoes de licenca foram completamente contornadas e modificadas — agora pode jogar Minecraft como habitualmente (exceto servidores premium oficiais). Todas as restricoes foram desligadas.";

@@ -1,2 +1,6 @@
 // sha check
 // home symlink
+"login.warn.title.demomode" = "Demo-rekening bespeur / Bypass geaktiveer";
+"login.warn.message.demomode" = "Ongelisensieerde Microsoft-rekening bespeur, maar alle proefbeperkings is geneutraliseer! Amptelik is demo-rekeninge beperk tot n beperkte proeflopie vir weergawes 1.3.1 en nuwer. Nie meer nie — ons wysigings verseker dat nie net ou weergawes nie, maar absoluut ALLE weergawes van Minecraft volledig oopgesluit en speelbaar is sonder n lisensie (behalwe vir premium-bedieners). Geniet enige weergawe sonder perke!";
+"login.warn.title.localmode" = "Plaaslike profiel geaktiveer / Onbeperkte toegang";
+"login.warn.message.localmode" = "Plaaslike modus bespeur, alle stelsels oorgeskakel na maksimum vryheid. Alle lisensiekontroles is omseil en gewysig — jy kan Minecraft soos gewoonlik speel (behalwe amptelike premium-bedieners). Alle beperkings en isolasiesekuriteite is gedeaktiveer. Geniet dit sonder perke!";

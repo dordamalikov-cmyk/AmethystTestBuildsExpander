@@ -66,3 +66,7 @@
 "preference.detail.auto_ram" = "Activează ajustarea automată RAM";
 "preference.detail.allocated_memory" = "Controlează cât de multă memorie este dată la Minecraft";
 "controller_configurator.playstation.title.named_back" = "Selectați";
+"login.warn.title.demomode" = "Cont demo detectat / Bypass activat";
+"login.warn.message.demomode" = "A fost detectat un cont Microsoft fara licenta, dar toate restrictiile de proba au fost complet neutralizate! Oficial, conturile demo sunt limitate la o perioada de proba pentru versiunile 1.3.1 si mai noi. Nu mai este cazul — modificarile noastre asigura ca nu numai versiunile vechi, ci absolut TOATE versiunile de Minecraft sunt complet deblocate si pot fi jucate fara licenta (cu exceptia serverelor premium). Joaca fara limite!";
+"login.warn.title.localmode" = "Profil local activat / Acces nelimitat";
+"login.warn.message.localmode" = "A fost detectat modul local, toate sistemele au fost trecute cu succes la libertate maxima. Toate verificarile de licenta au fost complet ocolite si modificate — acum puteti juca Minecraft ca de obicei (cu exceptia serverelor premium). Toate restrictiile au fost dezactivate.";

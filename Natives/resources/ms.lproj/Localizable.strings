@@ -54,3 +54,7 @@
 "preference.title.auto_ram" = "Auto RAM";
 "preference.detail.auto_ram" = "Membenarkan pelaras RAM automatik";
 "preference.detail.allocated_memory" = "Mengawal berapa banyak memori yang diberikan kepada Minecraft";
+"login.warn.title.demomode" = "Akaun Demo Dikesan / Bypass Diaktifkan";
+"login.warn.message.demomode" = "Akaun Microsoft tanpa lesen dikesan, tetapi semua sekatan percubaan telah dineutralkan sepenuhnya! Secara rasmi, akaun demo dihadkan kepada percubaan terhad untuk versi 1.3.1 dan yang lebih baru. Tidak lagi — pengubahsuaian kami memastikan bahawa bukan sahaja versi lama, tetapi semua versi Minecraft dibuka sepenuhnya dan boleh dimainkan tanpa lesen (kecuali pelayan premium). Nikmati mana-mana versi tanpa had!";
+"login.warn.title.localmode" = "Profil Lokal Diaktifkan / Akses Tanpa Had";
+"login.warn.message.localmode" = "Mod lokal dikesan, semua sistem berjaya ditukar kepada kebebasan maksimum. Semua semakan lesen telah dipintas dan diubah suai sepenuhnya — anda kini boleh bermain Minecraft seperti biasa (kecuali pelayan premium berlesen rasmi). Semua sekatan telah dinyahaktifkan.";

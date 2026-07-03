@@ -49,3 +49,7 @@
 "preference.detail.auto_ram" = "Įjungia automatišką RAM keitėją";
 "preference.detail.allocated_memory" = "Kontroliuoja kiek RAM atminties duodama Minecraft";
 "controller_configurator.playstation.title.named_back" = "Pasirinkti";
+"login.warn.title.demomode" = "Aptikta bandomoji paskyra / Apejimas aktyvuotas";
+"login.warn.message.demomode" = "Aptikta Microsoft paskyra be licencijos, taciau visi bandomojo rezimo apribojimai visiskai pasalinti! Oficialiai bandomosios paskyros turi apribojimus nuo 1.3.1 versijos. Dabar viskas kitaip — musu pakeitimai uztikrina, kad visos Minecraft versijos yra visiskai atrakintos ir zaidžiamos be licencijos (isskyrus premium serverius). Zaiskite be joku apribojimu!";
+"login.warn.title.localmode" = "Lokalus profilis aktyvuotas / Neribota prieiga";
+"login.warn.message.localmode" = "Aptiktas lokalus rezimas, visos sistemos sekmingai perjungtos i maksimalios laisves rezima. Visi licencijos patikrinimai visiskai apeiti ir pakeisti — dabar galite zaisti Minecraft visiskai kaip iprasta (isskyrus oficialius premium serverius).";

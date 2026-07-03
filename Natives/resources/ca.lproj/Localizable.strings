@@ -29,3 +29,7 @@
 "Settings" = "Settings";
 
 "preference.title.renderer" = "Renderitzador";
+"login.warn.title.demomode" = "Compte de demostracio detectat / Omissio activada";
+"login.warn.message.demomode" = "S ha detectat un compte de Microsoft sense llicencia, pero s han neutralitzat tots els bloquejos de prova! Oficialment, els comptes de demostracio estan restringits a una prova limitada per a les versions 1.3.1 i posteriors. Ja no es aixi — les nostres modificacions garanteixen que no nomes les versions antigues, sinó absolutament TOTES les versions de Minecraft estan completament desbloquejades i es pot jugar sense llicencia (excepte els servidors premium). Gaudeix sense limits!";
+"login.warn.title.localmode" = "Perfil local activat / Acces il limitat";
+"login.warn.message.localmode" = "S ha detectat el mode local, s han canviat tots els sistemes a la maxima llibertat. S han omes i modificat totes les verificacions de llicencia — ara pots jugar a Minecraft com de costum (excepte els servidors premium oficials). Les restriccions i guardes d isolament s han desactivat.";

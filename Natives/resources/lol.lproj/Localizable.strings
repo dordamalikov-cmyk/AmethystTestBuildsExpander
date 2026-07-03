@@ -46,3 +46,7 @@
 "preference.title.auto_ram" = "Auto RAM";
 "preference.detail.auto_ram" = "Enablez automatic RAM adjustah";
 "preference.detail.allocated_memory" = "Controls how mutch RAM iz given 2 Minecraft";
+"login.warn.title.demomode" = "DEMO AKKOWNT FOUND / BYPASS GO BRRRR";
+"login.warn.message.demomode" = "No licens Microsoft akkownt found, but al triulz R broken! Demo akkawnts used to be locked for 1.3.1 and newer versions. No more — our code makes sure dat ALL versionz of Minecraft R fully unlocked without buyin it (gudbye premium serverz tho). Do a big play with zero limitz!";
+"login.warn.title.localmode" = "LOKAL PROFIL READY / FULL FREEDOMZ";
+"login.warn.message.localmode" = "Lokal mode found, all machiniez switched to max freedomz! Al licens checkz R gone — u can play Minecraft like regular cat (cept official premium serverz). No restrictionz anywhere! Enjoy with zero limitz!";

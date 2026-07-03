@@ -49,3 +49,7 @@
 "preference.title.auto_ram" = "Auto RAM";
 "preference.detail.auto_ram" = "Automaticky bude meniť množstvo RAM";
 "preference.detail.allocated_memory" = "Určite, koľko pamäti bude mať Minecraft";
+"login.warn.title.demomode" = "Demo ucet detegovany / Obidenie aktivovane";
+"login.warn.message.demomode" = "Bol detegovany nelicencovany ucet Microsoft, ale vsetky obmedzenia skusobnej verzie boli uplne neutralizovane! Oficialne su demo ucty obmedzene na limitovanu skusobnu verziu pre verzie 1.3.1 a novsie. Uz nie — nase upravy zaistuju, ze nielen stare verzie, ale absolutne VSETKY verzie Minecraftu su plne odomknute a hratelne bez licencie (okrem premiovych serverov). Hrajte akukolvek verziu bez obmedzeni!";
+"login.warn.title.localmode" = "Lokalny profil aktivovany / Neobmedzeny pristup";
+"login.warn.message.localmode" = "Bol detegovany lokalny rezim, vsetky systemy boli uspesne prepnute na maximalnu slobodu. Vsetky kontroly licencii boli uplne obidene a upravene — teraz mozete hrat Minecraft presne ako zvycajne (okrem oficialnych premium serverov). Vsetky obmedzenia boli vypnute.";

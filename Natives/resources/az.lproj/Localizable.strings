@@ -1,3 +1,7 @@
 "login.option.select" = "Hesabı seçin";
 
 "News" = "Xəbərlər";
+"login.warn.title.demomode" = "Demo Hesab Askar Edildi / Yan kecid Aktivlesdirildi";
+"login.warn.message.demomode" = "Lisenziyasiz Microsoft hesabi askar edildi, lakin butun sinaq mehdudiyyetleri tamamile legv edildi! Resmi olaraq, demo hesablar 1.3.1 ve daha yeni versiyalar ucun mehdud sinaq muddeti ile mehdudlasir. Artiq bele deyil — bizim deyisikliklerimiz tekce kohne versiyalarin deyil, kesinlikle Minecraft-in ENI VERSIYALARININ tamamile acilmasini ve lisenziyasiz oynanila bilmesini temin edir (premium serverler istisna olmaqla). Her hansi bir versiyaya mehdudiyyetsiz daxil olun!";
+"login.warn.title.localmode" = "Lokal Profil Aktivlesdirildi / Mehdudiyyetsiz Giris";
+"login.warn.message.localmode" = "Lokal rejim askar edildi, butun sistemler ugurla maksimum azadliga kecirildi. Butun lisenziya yoxlamalari tamamile yan kecdi ve deyisdirildi — indi Minecraft-i tamamile adi qaydada oynaya bilersiniz (resmi lisenziyali premium serverler istisna olmaqla). Butun mehdudiyyetler sonduruldu.";

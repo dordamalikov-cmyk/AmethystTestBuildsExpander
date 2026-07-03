@@ -94,11 +94,11 @@
 "login.warn.title.limited_ram" = "该设备的可用内存有限。";
 "login.warn.message.limited_ram" = "我们建议启用自动分配内存大小，以防止不稳定和性能问题。";
 
-"login.warn.title.demomode" = "您现在是演示账户";
-"login.warn.message.demomode" = "演示模式作为离线和本地模式的替代，将允许你登录到一个尚未购买游戏的微软账户中游玩 1.3.1 及更新版本的试玩版本。因为官方启动器的一些特性，在较旧版本中会包含完整的游戏。详情请参阅我们的网站，了解更多关于离线模式的过渡。";
+"login.warn.title.demomode" = "检测到 Demo 账户 / 绕过已激活";
+"login.warn.message.demomode" = "检测到未授权的 Microsoft 账户，但所有试玩限制已被完全解除！官方的 Demo 账户仅限于 1.3.1 及更高版本的有限试玩。但现在不再如此 — 我们的修改确保不仅是老旧版本，而是绝对所有的 Minecraft 版本均已完全解锁，无需许可证即可畅玩（高级服务器除外）。畅享任何版本，无任何限制！";
 
-"login.warn.title.localmode" = "离线模式现在是本地模式了。";
-"login.warn.message.localmode" = "您可以继续游玩已经安装的版本，但是如果没有正版账户，您将无法再下载其他版本。任何有关本地账户以及如何获取其他 Minecraft 版本的问题将不会得到任何解答。";
+"login.warn.title.localmode" = "本地配置已激活 / 切换至无限制访问";
+"login.warn.message.localmode" = "检测到本地模式，所有系统已成功切换至最大自由度。所有许可证验证已被完全绕过和修改 — 现在您可以像往常一样畅玩 Minecraft（官方授权的高级服务器除外）。所有限制和隔离防护已完全禁用。";
 
 "login.msa.error.xsts.noxboxacc" = "此微软账户没有注册 Xbox 账户。请确认您已注册了 Xbox 账户。\n错误代码：2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live 目前在您的国家/地区不可用。\n错误代码：2148916235";

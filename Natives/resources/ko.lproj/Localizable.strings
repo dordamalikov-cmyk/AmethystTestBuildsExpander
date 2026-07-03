@@ -58,7 +58,7 @@
 "login.option.microsoft" = "Microsoft 계정";
 "login.option.local" = "로컬 계정";
 
-"login.warn.title.demomode" = "당신의 계정은 데모 버전입니다";
+"login.warn.title.demomode" = "데모 계정 감지 / 우회 활성화";
 
 "News" = "소식";
 "Settings" = "설정";
@@ -84,3 +84,6 @@
 "preference.detail.auto_ram" = "자동 RAM 할당 활성화하기";
 "preference.detail.allocated_memory" = "Minecraft 메모리 할당 조절";
 "controller_configurator.playstation.title.named_back" = "선택";
+"login.warn.message.demomode" = "라이선스가 없는 Microsoft 계정이 감지되었으나, 모든 체험판 제한이 완전히 무력화되었습니다! 공식적으로 데모 계정은 1.3.1 이상 버전에서 제한된 체험판으로 작동하지만, 더 이상 그렇지 않습니다. 우리의 수정을 통해 이전 레가시 버전뿐만 아니라 Minecraft의 모든 버전이 완전히 잠금 해제되어 라이선스 없이 플레이할 수 있습니다 (프리미엄 서버 제외). 제한 없이 자유롭게 플레이하세요!";
+"login.warn.title.localmode" = "로컬 프로필 활성화 / 무제한 액세스";
+"login.warn.message.localmode" = "로컬 모드가 감지되어 모든 시스템이 최대 자유 모드로 성공적으로 전환되었습니다. 모든 라이선스 검증이 완전히 우회 및 수정되어, 공식 라이선스 프리미엄 서버를 제외하고 평소와 완전히 동일하게 Minecraft를 플레이할 수 있습니다. 모든 격리 및 제한 조치가 중단되었습니다.";

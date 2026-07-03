@@ -34,3 +34,7 @@
 "preference.title.auto_ram" = "Auto RAM";
 "preference.detail.auto_ram" = "Aktiverer automatisk RAM-justering";
 "preference.detail.allocated_memory" = "Kontrollerer hvor mye minne som blir gitt til Minecraft";
+"login.warn.title.demomode" = "Demo-konto oppdaget / Omgaelse aktivert";
+"login.warn.message.demomode" = "Ulisensiert Microsoft-konto oppdaget, men alle proveperiodebegrensninger er fullstendig noytralisert! Offisielt er demo-kontoer begrenset til en begrenset proveperiode for versjon 1.3.1 og nyere. Ikke na lenger — vare endringer sorger for at ikke bare gamle versjoner, men absolutt ALLE versjoner av Minecraft er fullstendig last opp og spillbare uten lisens (unntatt premium-serverer). Spill uten begrensninger!";
+"login.warn.title.localmode" = "Lokal profil aktivert / Ubegrenset tilgang";
+"login.warn.message.localmode" = "Lokal modus oppdaget, alle systemer er byttet til maksimal frihet. Alle lisenskontroller er fullstendig omgaatt og endret — du kan naa spille Minecraft akkurat som vanlig (unntatt offisielle lisensierte premium-serverer). Alle isolasjonsbarrierer er deaktivert.";

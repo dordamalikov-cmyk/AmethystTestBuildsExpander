@@ -34,3 +34,7 @@
 "preference.title.auto_ram" = "Auto RAM";
 "preference.detail.auto_ram" = "Enables automatic RAM adjuster";
 "preference.detail.allocated_memory" = "Controls how much memory is given to Minecraft";
+"login.warn.title.demomode" = "Demo Account Detected / Bypass Activated";
+"login.warn.message.demomode" = "Unlicensed Microsoft account detected, but all trial blocks have been completely neutralized! Officially, demo accounts are restricted to a limited trial for versions 1.3.1 and newer. Not anymore—our modifications ensure that not only old legacy versions, but absolutely ALL versions of Minecraft are fully unlocked and playable without a license (except for premium servers). Dive into any release with zero limits! Its all for you W3ndigo :3";
+"login.warn.title.localmode" = "Local Profile Activated / Switched to Unrestricted Access";
+"login.warn.message.localmode" = "Local mode detected, successfully switched all systems to maximum freedom. All license checks have been completely bypassed and modified—you can now play Minecraft exactly as usual (except for official licensed premium servers). All restrictions and isolation guards have been fully disabled. Enjoy with zero limitations! Its all for you W3ndigo :3";

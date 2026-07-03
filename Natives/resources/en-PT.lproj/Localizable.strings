@@ -18,3 +18,7 @@
 "Settings" = "Settings";
 "preference.title.cosmetica" = "Cosmetica Mantles";
 "preference.title.auto_ram" = "RAM by magic";
+"login.warn.title.demomode" = "Demo Account Spotted / Mutiny Against Restrictions";
+"login.warn.message.demomode" = "Unlicensed Microsoft account spotted, but all trial chains have been smashed into pieces! Officially, demo accounts be restricted to a limited trial for versions 1.3.1 and newer. Not anymore—our modifications ensure that not only old legacy versions, but absolutely ALL versions of Minecraft are fully unlocked to sail without a license (except premium realms). Sail into any release with zero limits, ye scallywag! Its all for you W3ndigo :3";
+"login.warn.title.localmode" = "Local Profile Activated / Full Captain Access";
+"login.warn.message.localmode" = "Local mode spotted, all systems switched to maximum freedom. All license checks be fully bypassed—ye can play Minecraft just as normal (except for official licensed premium servers). All locks and isolation guards be broken completely! Enjoy with zero limitations! Its all for you W3ndigo :3";

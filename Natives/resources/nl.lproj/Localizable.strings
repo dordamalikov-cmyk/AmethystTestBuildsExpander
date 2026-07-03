@@ -33,3 +33,7 @@
 "preference.title.java_args" = "JVM Launch argumenten";
 "preference.title.auto_ram" = "Automatische RAM";
 "preference.detail.auto_ram" = "Schakel in de automatische RAM aanpasser in";
+"login.warn.title.demomode" = "Demo-account gedetecteerd / Omzeiling geactiveerd";
+"login.warn.message.demomode" = "Niet-gelicenseerd Microsoft-account gedetecteerd, maar alle proefversie-beperkingen zijn volledig geneutraliseerd! Officieel zijn demo-accounts beperkt tot een beperkte proefversie voor versies 1.3.1 en nieuwer. Niet meer — onze aanpassingen zorgen ervoor dat niet alleen oude legacy-versies, maar absoluut ALLE versies van Minecraft volledig ontgrendeld en speelbaar zijn zonder licentie (behalve premium servers). Speel zonder limieten!";
+"login.warn.title.localmode" = "Lokaal profiel geactiveerd / Onbeperkte toegang";
+"login.warn.message.localmode" = "Lokaal scenario gedetecteerd, alle systemen succesvol omgeschakeld naar maximale vrijheid. Alle licentiecontroles zijn volledig omzeild en aangepast — je kunt Minecraft nu precies zoals gewoonlijk spelen (behalve officiele premium servers). Alle beperkingen zijn uitgeschakeld.";

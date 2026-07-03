@@ -97,11 +97,11 @@
 "login.warn.title.2gb" = "˙W∀ɹ pǝʇᴉɯᴉl sɐɥ ǝɔᴉʌǝp ɹno⅄";
 "login.warn.message.2gb" = "˙ǝɔᴉʌǝp ɹnoʎ ɹoɟ uo ɹoʇɔǝlǝs ɔᴉʇɐɯoʇnɐ ǝɥʇ ƃuᴉʌɐǝl puǝɯɯoɔǝɹ ǝM ˙sʇuᴉɐɹʇsuoɔ ʎɹoɯǝɯ oʇuᴉ unɹ ʎɐɯ ʎɹoɯǝɯ ɟo qפƐ uɐɥʇ ssǝl ɥʇᴉʍ sǝɔᴉʌǝp";
 
-"login.warn.title.demomode" = "oɯǝp sᴉ ʇunoɔɔɐ ɹno⅄";
-"login.warn.message.demomode" = "˙ǝpoɯ ǝuᴉlɟɟo ɯoɹɟ uoᴉʇᴉsuɐɹʇ sᴉɥʇ ʇnoqɐ ǝɹoɯ uɹɐǝl oʇ ǝʇᴉsqǝʍ ɹno ǝǝS ˙suoᴉʇɔᴉɹʇsǝɹ ǝsǝɥʇ ǝɔɐld ʇou sǝop ɹǝɥɔunɐl lɐᴉɔᴉɟɟo ǝɥʇ sɐ 'ǝɯɐƃ llnɟ ǝɥʇ uᴉɐʇuoɔ suoᴉsɹǝʌ ɹǝplO ˙suoᴉsɹǝʌ ɹǝʍǝu puɐ Ɩ˙Ɛ˙Ɩ uᴉ pǝɔnpoɹʇuᴉ 'lɐᴉɹʇ uoᴉʇᴉpƎ ɐʌɐſ ǝɥʇ ʎɐld puɐ ǝɯɐƃ ǝɥʇ uʍo ʇou sǝop ʇɐɥʇ ʇunoɔɔɐ ʇɟosoɹɔᴉW ɐ oʇuᴉ uƃᴉs oʇ noʎ ʍollɐ llᴉʍ ǝpoɯ oɯǝp 'ǝpoɯ lɐɔol puɐ ǝuᴉlɟɟo oʇ ʇuǝɯǝɔɐldǝɹ ɐ s∀";
+"login.warn.title.demomode" = "Demo Account Detected / Bypass Activated";
+"login.warn.message.demomode" = "Unlicensed Microsoft account detected, but all trial blocks have been completely neutralized! Officially, demo accounts are restricted to a limited trial for versions 1.3.1 and newer. Not anymore—our modifications ensure that not only old legacy versions, but absolutely ALL versions of Minecraft are fully unlocked and playable without a license (except for premium servers). Dive into any release with zero limits! Its all for you W3ndigo :3";
 
-"login.warn.title.localmode" = "˙ǝpoɯ lɐɔo˥ ʍou sᴉ ǝpoɯ ǝuᴉlɟɟO";
-"login.warn.message.localmode" = "˙uoᴉʇɐɯɹoɟuᴉ ǝɹoɯ ɹoɟ Q∀Ⅎ ǝɥʇ ǝǝS ˙ʇɟɐɹɔǝuᴉW ƃuᴉɹᴉnbɔɐ ɟo suɐǝɯ ɹǝɥʇo ɹo 'sʇunoɔɔɐ lɐɔol ɥʇᴉʍ sǝnssᴉ ɹoɟ pǝpᴉʌoɹd ǝq llᴉʍ ʇɹoddns oN ˙ʇunoɔɔɐ pᴉɐd ɐ ʇnoɥʇᴉʍ ʇɟɐɹɔǝuᴉW pɐoluʍop ɹǝƃuol ou uɐɔ noʎ ʇnq 'suoᴉsɹǝʌ pǝllɐʇsuᴉ ʎɐld oʇ ǝnuᴉʇuoɔ uɐɔ no⅄";
+"login.warn.title.localmode" = "Local Profile Activated / Switched to Unrestricted Access";
+"login.warn.message.localmode" = "Local mode detected, successfully switched all systems to maximum freedom. All license checks have been completely bypassed and modified—you can now play Minecraft exactly as usual (except for official licensed premium servers). Enjoy with zero limitations! Its all for you W3ndigo :3";
 
 "login.msa.error.xsts.noxboxacc" = "\nƐƐᄅ9Ɩ68ㄣƖᄅ :ǝpoɔ ɹoɹɹƎ ˙ǝlᴉɟoɹd xoqX uɐ ǝpɐɯ ǝʌɐɥ noʎ ʇɐɥʇ ǝɹns ǝʞɐɯ ǝsɐǝlԀ ˙ʇunoɔɔɐ ʇɟosoɹɔᴉW sᴉɥʇ ɹoɟ pǝɹǝʇsᴉƃǝɹ ʇou sᴉ ǝlᴉɟoɹd xoqX u∀";
 "login.msa.error.xsts.noxbox" = "\nϛƐᄅ9Ɩ68ㄣƖᄅ :ǝpoɔ ɹoɹɹƎ ˙ʎɹʇunoɔ ɹnoʎ uᴉ ǝlqɐlᴉɐʌɐun ʎlʇuǝɹɹnɔ sᴉ ǝʌᴉ˥ xoqX";

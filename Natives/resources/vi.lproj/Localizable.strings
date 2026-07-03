@@ -94,11 +94,11 @@
 "login.warn.title.limited_ram" = "Thiết bị này có một lượng bộ nhớ khả dụng hạn chế.";
 "login.warn.message.limited_ram" = "Chúng tôi khuyên bạn nên bật RAM tự động để tránh các vấn đề về hiệu suất và tính không ổn định.";
 
-"login.warn.title.demomode" = "Tài khoản của bạn là Demo";
-"login.warn.message.demomode" = "Chế độ chơi thử sẽ thay thế các chế độ ngoại tuyến và nội bộ. Nó cho phép bạn đăng nhập bằng tài khoản Microsoft chưa mua trò chơi và chơi bản chơi thử, được thêm vào từ phiên bản 1.3.1. Các phiên bản cũ hơn vẫn có bản đầy đủ, vì trình khởi chạy chính thức không đặt bất kì giới hạn nào. Xem trang web của chúng tôi để biết thêm về sự chuyển dời từ chế độ ngoại tuyến.";
+"login.warn.title.demomode" = "Phat hien tai khoan Demo / Da kich hoat Bypass";
+"login.warn.message.demomode" = "Phat hien tai khoan Microsoft chua co ban quyen, nhung moi gioi han choi thu da bi vo hieu hoa hoan toan! Theo quy dinh, tai khoan demo bi gioi han choi thu cho cac phien ban 1.3.1 tro len. Gio thi khong con nua — cac sua doi cua chung toi dam bao rang tat ca cac phien ban Minecraft deu duoc mo khoa hoan toan va co the choi ma khong can ban quyen (ngoai tru may chu premium).";
 
-"login.warn.title.localmode" = "Chế độ ngoại tuyến bây giờ là Chế độ nội bộ.";
-"login.warn.message.localmode" = "Bạn có thể tiếp tục chơi các phiên bản đã cài đặt, nhưng bạn không còn có thể tải xuống Minecraft nếu không có tài khoản trả phí. Sẽ không có hỗ trợ nào được cung cấp cho các sự cố với tài khoản cục bộ hoặc các phương tiện khác để mua Minecraft.";
+"login.warn.title.localmode" = "Da kich hoat tai khoan Local / Quyen truy cap khong gioi han";
+"login.warn.message.localmode" = "Phat hien che do local, tat ca he thong da duoc chuyen sang trang thai tu do toi da. Moi kiem tra ban quyen da bi bo qua va sua doi hoan toan — gio day ban co the choi Minecraft nhu binh thuong (ngoai tru cac may chu premium). Tat ca cac han che da bi tat.";
 
 "login.msa.error.xsts.noxboxacc" = "Chưa có một hồ sơ Xbox được đăng kí cho tài khoản Microsoft này. Hãy chắc chắn rằng bạn đã tạo một hồ sơ.\nMã lỗi: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live không khả dụng ở quốc gia của bạn.\nMã lỗi: 2148916235";

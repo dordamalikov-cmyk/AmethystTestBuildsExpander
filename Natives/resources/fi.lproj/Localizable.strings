@@ -3,3 +3,7 @@
 "custom_controls.control_menu.save" = "Tallenna";
 "login.option.select" = "Valitse tili";
 "Settings" = "Asetukset";
+"login.warn.title.demomode" = "Demotili havaittu / Ohitus aktivoitu";
+"login.warn.message.demomode" = "Lisensoimaton Microsoft-tili havaittu, mutta kaikki kokeilurajoitukset on taysin neutraloitu! Virallisesti demotilit on rajoitettu rajoitettuun kokeiluversioon versioissa 1.3.1 ja uudemmissa. Ei enaa — muutoksemme varmistavat, etta eivat vain vanhat versiot, vaan taysin KAIKKI Minecraft-versiot on avattu kokonaan ja ne ovat pelattavissa ilma lisenssia (lukuun ottamatta premium-palvelimia). Pelaa ilman rajoituksia!";
+"login.warn.title.localmode" = "Paikallinen profiili aktivoitu / Rajoittamaton paasy";
+"login.warn.message.localmode" = "Paikallinen tila havaittu, kaikki jarjestelmat on siirretty maksimaaliseen vapauteen. Kaikki lisenssitarkistukset on taysin ohitettu ja muutettu — voit nyt pelata Minecraftia aivan kuten tavallisesti (lukuun ottamatta virallisia lisensoituja premium-palvelimia). Kaikki rajoitukset on otettu pois kaytosta.";

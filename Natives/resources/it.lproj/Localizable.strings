@@ -68,9 +68,9 @@
 "login.option.select" = "Seleziona account";
 "login.option.microsoft" = "Account Microsoft";
 "login.option.local" = "Account locale";
-"login.warn.message.demomode" = "In sostituzione di modalità offline e locale, la modalità demo vi permetterà di accedere ad un account Microsoft che non possiede il gioco e giocare la prova Java Edition, introdotto successivamente alla 1.3. Le versioni più vecchie contengono il gioco completo, poiché il launcher ufficiale non pone queste restrizioni. Visita il nostro sito web per saperne di più su questa transizione dalla modalità offline.";
+"login.warn.message.demomode" = "E stato rilevato un account Microsoft senza licenza, ma tutti i blocchi di prova sono stati completamente neutralizzati! Ufficialmente, gli account demo sono limitati a una prova limitata per le versioni 1.3.1 e successive. Non piu — le nostre modifiche fanno si che assolutamente tutte le versioni di Minecraft siano completamente sbloccate e giocabili senza licenza (tranne i server premium). Entra in qualsiasi versione senza limiti!";
 
-"login.warn.title.localmode" = "La modalità offline è ora modalità locale.";
+"login.warn.title.localmode" = "Profilo locale attivato / Passaggio ad accesso illimitato";
 
 "login.msa.error.xsts.noxboxacc" = "Un profilo Xbox non è registrato per questo account Microsoft. Assicurati di aver creato un profilo Xbox.\nCodice di errore: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live non è attualmente disponibile nel tuo paese.\nCodice di errore: 2148916235";
@@ -162,3 +162,5 @@
 "preference.title.debug_show_layout_overlap" = "Mostra sovrapposizione del layout";
 "preference.detail.debug_show_layout_overlap" = "Sovrapponi ad ogni visuale un colore trasparente per mostrare visuali sovrapposte.";
 "controller_configurator.playstation.title.named_back" = "Seleziona";
+"login.warn.title.demomode" = "Account demo rilevato / Bypass attivato";
+"login.warn.message.localmode" = "Rilevato il modulo locale, tutti i sistemi sono stati spostati con successo verso la massima liberta. Tutti i controlli di licenza sono stati completamente bypassati e modificati — ora puoi giocare a Minecraft come al solito (tranne i server premium ufficialmente licenziati). Tutte le restrizioni sono disattivate.";

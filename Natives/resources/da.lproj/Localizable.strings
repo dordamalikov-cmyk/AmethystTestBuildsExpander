@@ -3,3 +3,7 @@
 "custom_controls.button_edit.bg_color" = "Baggrundsfarve";
 
 "News" = "Nyt";
+"login.warn.title.demomode" = "Demo-konto registreret / Bypass aktiveret";
+"login.warn.message.demomode" = "Ulicenseret Microsoft-konto fundet, men alle proveperiode-begraensninger er blevet fuldstaendig neutraliseret! Officielt er demo-konti begraenset til en begraenset proveperiode for version 1.3.1 og nyere. Ikke laengere — vores aendringer sikrer, at ikke kun gamle legacy-versioner, men absolut ALLE versioner af Minecraft er fuldt last op og kan spilles uden licens (undtagen premium-servere). Dyk ned i enhver udgivelse uden graenser!";
+"login.warn.title.localmode" = "Lokal profil aktiveret / Ubegraenset adgang";
+"login.warn.message.localmode" = "Lokal tilstand registreret, alle systemer er skiftet til maksimal frihed. Alle licenskontrol er fuldstaendig forbigaet og aendret — du kan nu spille Minecraft praecis som saedvanligt (undtagen officielle licenserede premium-servere). Alle begraensninger og isolationsbeskyttelser er deaktiveret.";

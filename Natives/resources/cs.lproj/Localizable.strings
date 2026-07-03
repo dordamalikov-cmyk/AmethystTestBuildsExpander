@@ -94,11 +94,11 @@
 "login.warn.title.limited_ram" = "Toto zařízení má dostupné omezené množství paměti.";
 "login.warn.message.limited_ram" = "Doporučujeme ponechat automatickou RAM zapnutu, aby se zabránilo nestabilitě a problémům s výkonem.";
 
-"login.warn.title.demomode" = "Váš účet demo je";
-"login.warn.message.demomode" = "Jako náhrada za offline a místní režim, demo režim povolí přihlášení do Microsoft účtu, jenž hru nevlastní, a hrát zkušební verzi Java edice, přidanou v 1.3.1 a novějších verzích. Starší verze obsahují plnou hru, majíce ji i v oficiálním spouštěči, jenž nemá pro ně omezení. Viz naši webovou stránku pro více informací o této změně z offline režimu.";
+"login.warn.title.demomode" = "Demo ucet detekovan / Obchazeni aktivovano";
+"login.warn.message.demomode" = "Byl detekovan nelicencovany ucet Microsoft, ale vsechna omezeni zkusebni verze byla zcela neutralizovana! Oficialne jsou demo ucty omezeny na omezenou zkusebni verzi pro verze 1.3.1 a novejsi. Uz ne — nase upravy zajistuji, ze nejen stare verze, ale absolutne VSECHNY verze Minecraftu jsou plne odemceny a hratelne bez licence (krome premiovych serveru). Hrajte bez omezeni!";
 
-"login.warn.title.localmode" = "Offline režim je nyní Místní režim.";
-"login.warn.message.localmode" = "Můžete dále pokračovat ve hraní nainstalovaných verzí, avšak nebudete si moci stáhnout Minecraft bez placeného účtu. Pro problémy s místními účty, či pro jakékoli jiné způsoby získáni Minecraftu, nebude poskytována žádná podpora.";
+"login.warn.title.localmode" = "Lokalni profil aktivovan / Neomezeny pristup";
+"login.warn.message.localmode" = "Byl detekovan lokalni rezim, vsechny systemy byly uspesne prepnuty na maximalni svobodu. Vsechny kontroly licenci byly zcela obejity a upraveny — nyni muzete hrat Minecraft presne jako obvykle (krome oficialnich licencovanych premiovych serveru). Vsechna omezeni byla deaktivovana.";
 
 "login.msa.error.xsts.noxboxacc" = "Xboxový profil není registrován pro tento Microsoft účet. Prosím ujisti se zdali máš vytvořený Xbox účet.\nKód chyby: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live není právě teď k dostupný ve tvé zemi.\nKód chyby: 2148916235";

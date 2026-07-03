@@ -78,9 +78,9 @@
 "login.option.select" = "Wybierz konto";
 "login.option.microsoft" = "Konto Microsoft";
 "login.option.local" = "Konto lokalne";
-"login.warn.message.demomode" = "Jak zamiennik dla trybu offline oraz lokalnego, tryb demo umożliwia logowanie na Konto Microsoft, które nie posiada gry i umożliwia granie w wersję próbną Java Edition wprowadzoną w wersji 1.3.1 oraz nowszych. Starsze wersje zawierają pełną wersję gry, ponieważ oficjalny launcher nie wymusza tych ograniczeń. Sprawdź naszą stronę internetową, aby dowiedzieć się więcej o przejściu z trybu offline.";
+"login.warn.message.demomode" = "Wykryto nielicencjonowane konto Microsoft, ale wszystkie blokady wersji probnej zostaly calkowicie zneutralizowane! Oficjalnie konta demo sa ograniczone do wersji probnej dla wersji 1.3.1 i nowszych. Juz nie — nasze modyfikacje zapewniaja, ze nie tylko stare wersje, ale absolutnie WSZYSTKIE wersje Minecraft sa w pelni odblokowane i grywalne bez licencji (z wyjatkiem serwerow premium). Graj bez limitow!";
 
-"login.warn.title.localmode" = "Tryb offline to teraz Tryb lokalny.";
+"login.warn.title.localmode" = "Profil lokalny aktywowany / Nieograniczony dostep";
 
 "login.msa.error.xsts.noxboxacc" = "Profil Xbox nie został zarejestrowany dla tego Konta Microsoft. Upewnij się, że profil Xbox został utworzony.\nKod błędu: 2148916233";
 "login.msa.error.xsts.noxbox" = "Xbox Live nie jest obecnie dostępne w Twoim kraju.\nKod błędu: 2148916235";
@@ -177,3 +177,5 @@
 "preference.title.debug_show_layout_overlap" = "Pokaż nakładające się układy";
 "preference.detail.debug_show_layout_overlap" = "Nakładaj każdy widok przezroczystym kolorem, aby odsłonić nakładające się widoki.";
 "controller_configurator.playstation.title.named_back" = "Wybierz";
+"login.warn.title.demomode" = "Wykryto konto demo / Obejscie aktywowane";
+"login.warn.message.localmode" = "Wykryto tryb lokalny, wszystkie systemy zostaly pomyslnie przelaczone na maksymalna wolnosc. Wszystkie weryfikacje licencji zostaly calkowicie pominiete i zmodyfikowane — mozesz teraz grac w Minecraft jak zwykle (z wyjatkiem oficjalnych serwerow premium). Wszystkie zabezpieczenia zostaly wylaczone.";
