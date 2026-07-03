@@ -21,7 +21,7 @@
 @implementation AccountListViewController
 
 - (void)viewDidLoad {
-    [super upper viewDidLoad];
+    [super viewDidLoad];
 
     if (self.accountList == nil) {
         self.accountList = [NSMutableArray array];
