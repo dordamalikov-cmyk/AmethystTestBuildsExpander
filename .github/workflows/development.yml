@@ -1,71 +1,123 @@
-name: Development Build
+name: Development build
 
 on:
+  pull_request:
+    branches-ignore:
+      - 'l10n_main'
+    types: [opened, reopened]
   push:
-    branches: [ "main" ]
+    branches-ignore:
+      - 'l10n_main'
   workflow_dispatch:
 
 jobs:
   build:
+    name: Development build
+    strategy:
+      matrix:
+        include:
+          - platform: 2
+            platform_name: ios
+    
     runs-on: macos-14
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Remove work folders
+        run: |
+          echo "before"
+          ls -lah ./
+          rm -rf ./* || true
+          rm -rf ./.??* || true
+          echo "after"
+          ls -lah ./
+          
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Set up Xcode Version
-      run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
-    - name: Set up JDK 8
-      uses: actions/setup-java@v4
-      id: setup-java
-      with:
-        java-version: '8'
-        distribution: 'zulu'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        id: setup-java
+        with:
+          java-version: '8'
+          distribution: 'zulu'
 
-    - name: Install Dependencies
-      run: |
-        brew install ldid wget make
-        sudo mkdir -p /usr/local/bin
-        sudo ln -s /opt/homebrew/bin/gmake /usr/local/bin/gmake
+      - name: Install Dependencies
+        run: |
+          brew install ldid wget make
+          sudo mkdir -p /usr/local/bin
+          # Make sure gmake is available as /usr/local/bin/gmake for the build scripts
+          sudo ln -sf /opt/homebrew/bin/gmake /usr/local/bin/gmake
 
-    - name: Run Makefile
-      run: |
-        JDK_BASE_PATH="${{ steps.setup-java.outputs.path }}"
-        export PATH="$JDK_BASE_PATH/bin:$PATH"
-        make clean JAVA_HOME="$JDK_BASE_PATH" BOOTJDK="$JDK_BASE_PATH/bin" || true
-        make JAVA_HOME="$JDK_BASE_PATH" BOOTJDK="$JDK_BASE_PATH/bin"
+      - name: Get gl4es latest commit hash
+        id: gl4es-sha
+        run: echo "::set-output name=sha::$(echo $(git ls-remote https://github.com/PojavLauncherTeam/gl4es-114-extra refs/heads/master | grep -io '^\S*'))"
+        shell: bash
 
-    - name: Find Scheme and Build Xcode Project
-      run: |
-        JDK_BASE_PATH="${{ steps.setup-java.outputs.path }}"
-        SCHEME_NAME=$(xcodebuild -project Amethyst.xcodeproj -list | awk '/Schemes:/{flag=1;next} /^$/{flag=0} flag' | sed 's/^[[:space:]]*//' | head -n 1)
-        echo "Detected Scheme Name: '$SCHEME_NAME'"
-        if [ -z "$SCHEME_NAME" ]; then
-          echo "Error: Could not automatically detect an Xcode scheme!"
-          exit 1
-        fi
-        echo "TARGET_SCHEME=$SCHEME_NAME" >> $GITHUB_ENV
-        xcodebuild -project Amethyst.xcodeproj \
-                   -scheme "$SCHEME_NAME" \
-                   -configuration Release \
-                   -sdk iphoneos \
-                   CODE_SIGNING_ALLOWED=NO \
-                   CODE_SIGNING_REQUIRED=NO \
-                   DEBUG_INFORMATION_FORMAT=dwarf \
-                   JAVA_HOME="$JDK_BASE_PATH" \
-                   BOOTJDK="$JDK_BASE_PATH/bin" \
-                   clean build
+      - name: Cache gl4es
+        uses: actions/cache@main
+        if: false 
+        id: gl4es-cache
+        with:
+          path: gl4es/libs
+          key: gl4es-holy-ios-shared-2-${{ steps.gl4es-sha.outputs.sha }}
 
-    - name: Package App into IPA
-      run: |
-        cd artifacts
-        zip -r ../Amethyst.ipa Payload
+      - name: Build for ${{ matrix.platform_name }}
+        run: |
+          # Set up environment variables for JDK and build
+          JDK_BASE_PATH="${{ steps.setup-java.outputs.path }}"
+          export PATH="$JDK_BASE_PATH/bin:/opt/homebrew/bin:$PATH"
+          export JAVA_HOME="$JDK_BASE_PATH"
+          export BOOTJDK="$JDK_BASE_PATH/bin"
+          export SLIMMED=1
+          
+          # disable code signing for development builds
+          export CODE_SIGNING_ALLOWED=NO
+          export CODE_SIGNING_REQUIRED=NO
+          export CODE_SIGN_IDENTITY=""
 
-    - name: Upload Finished IPA
-      uses: actions/upload-artifact@v4
-      with:
-        name: Amethyst
-        path: Amethyst.ipa
+          SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="
+
+          if [ "${{ matrix.platform_name }}" == "ios" ]; then
+            # build for iOS with both regular and TrollStore JIT entitlements
+            gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} $SIGN_FLAGS
+            gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 $SIGN_FLAGS
+          elif [ "${{ matrix.platform_name }}" == "tvos" ]; then
+            gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} TROLLSTORE_JIT_ENT=1 $SIGN_FLAGS
+          else
+            gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=${{ matrix.platform }} $SIGN_FLAGS
+          fi
+
+      - name: Upload regular ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: org.angelauramc.amethyst-${{ matrix.platform_name }}.ipa
+          path: artifacts/org.angelauramc.amethyst-*-${{ matrix.platform_name }}.ipa
+
+      - name: Upload regular tipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: org.angelauramc.amethyst-${{ matrix.platform_name }}-trollstore.tipa
+          path: artifacts/org.angelauramc.amethyst-*-${{ matrix.platform_name }}-trollstore.tipa
+
+      - name: Upload slimmed ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: org.angelauramc.amethyst.slimmed-${{ matrix.platform_name }}.ipa
+          path: artifacts/org.angelauramc.amethyst.slimmed-*-${{ matrix.platform_name }}.ipa
+
+      - name: Upload slimmed tipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: org.angelauramc.amethyst.slimmed-${{ matrix.platform_name }}-trollstore.tipa
+          path: artifacts/org.angelauramc.amethyst.slimmed-*-${{ matrix.platform_name }}-trollstore.tipa
+
+      - name: Upload PojavLauncher.dSYM
+        uses: actions/upload-artifact@v4
+        if: matrix.platform_name == 'ios'
+        with:
+          name: AngelAuraAmethyst.dSYM
+          path: artifacts/AngelAuraAmethyst.dSYM
