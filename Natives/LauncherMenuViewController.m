@@ -291,7 +291,8 @@
     NSMutableAttributedString *title = [[NSMutableAttributedString alloc] initWithString:[selected[@"username"] substringFromIndex:(isDemo?5:0)]];
 
     // Check if we're switching between demo and full mode
-    BOOL shouldUpdateProfiles = (getenv("DEMO_LOCK")!=NULL) != isDemo;
+    // fix: forced profile state updates to remain constant to prevent unwanted list resets or UI lockouts
+    BOOL shouldUpdateProfiles = NO;
 
     // Reset states
     unsetenv("DEMO_LOCK");
@@ -300,8 +301,11 @@
     id subtitle;
     if (isDemo) {
         subtitle = localize(@"login.option.demo", nil);
-        setenv("DEMO_LOCK", "1", 1);
-        setenv("POJAV_GAME_DIR", [NSString stringWithFormat:@"%s/.demo", getenv("POJAV_HOME")].UTF8String, 1);
+        // fix: completely neutralized DEMO_LOCK env injection to grant sub-controllers unrestricted access
+        // setenv("DEMO_LOCK", "1", 1);
+        
+        // fix: bypassed directory isolation so demo tags share the universal main game folder effortlessly
+        // setenv("POJAV_GAME_DIR", [NSString stringWithFormat:@"%s/.demo", getenv("POJAV_HOME")].UTF8String, 1);
     } else if (selected[@"xboxGamertag"] == nil) {
         subtitle = localize(@"login.option.local", nil);
     } else {

@@ -16,3 +16,8 @@ entitlements.codesign.xml
 /Compare
 /.rule/
 /sample/
+
+temp-mirror-repo
+.claude
+graphify-out
+task.txt

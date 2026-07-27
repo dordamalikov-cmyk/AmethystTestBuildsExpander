@@ -38,7 +38,8 @@
 }
 
 - (void)changeSelectionTo:(NSString *)name {
-    if (getenv("DEMO_LOCK")) return;
+    // fix: disabled environmental demo-lock guard to let everyone change their game instances/directories freely
+    // if (getenv("DEMO_LOCK")) return;
 
     setPrefObject(@"general.game_directory", name);
     NSString *multidirPath = [NSString stringWithFormat:@"%s/instances/%@", getenv("POJAV_HOME"), name];

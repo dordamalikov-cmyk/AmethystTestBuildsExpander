@@ -45,7 +45,11 @@
     self.hasDetail = YES;
     self.prefDetailVisible = self.navigationController == nil;
     
-    self.prefSections = @[@"general", @"video", @"mobileglues", @"control", @"java", @"debug"];
+    self.prefSections = @[@"general", @"video",
+#if MOBILEGLUES_ENABLED
+        @"mobileglues",
+#endif
+        @"control", @"java", @"debug"];
 
     self.rendererKeys = getRendererKeys(NO);
     self.rendererList = getRendererNames(NO);
@@ -145,9 +149,11 @@
                       [NSFileManager.defaultManager createDirectoryAtPath:demoPath
                                               withIntermediateDirectories:YES attributes:nil error:nil];
                       [NSFileManager.defaultManager changeCurrentDirectoryPath:demoPath];
-                      if (getenv("DEMO_LOCK")) {
+                      
+                      // fix: completely neutralized the conditional DEMO_LOCK check to prevent any unexpected logic blocks or profile updates freezes
+                      // if (getenv("DEMO_LOCK")) {
                           [(LauncherNavigationController *)self.navigationController fetchLocalVersionList];
-                      }
+                      // }
                   } else {
                       NSLog(@"Error in erase_demo_data: %@", error);
                       showDialog(localize(@"Error", nil), error.localizedDescription);
@@ -233,7 +239,9 @@
                   localize(@"preference.title.microphone_source-back", nil)
               ]
             },
-        ], @[
+        ],
+#if MOBILEGLUES_ENABLED
+        @[
             // MobileGlues settings
             @{@"icon": @"cpu"},
             @{@"key": @"enable_angle",
@@ -329,6 +337,7 @@
               ]
             },
         ],
+#endif
         @[
             // Control settings
             @{@"icon": @"gamecontroller"},
