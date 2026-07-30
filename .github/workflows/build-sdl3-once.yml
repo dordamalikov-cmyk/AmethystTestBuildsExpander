@@ -1,0 +1,36 @@
+name: Build SDL3 iOS Framework
+
+on:
+  workflow_dispatch: # Позволяет запускать сборку вручную одной кнопкой
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout SDL3
+        uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          ref: main
+
+      - name: Build Framework for iOS Device (arm64)
+        run: |
+          xcodebuild -project Xcode-iOS/SDL/SDL.xcodeproj \
+            -scheme "Framework-iOS" \
+            -configuration Release \
+            -sdk iphoneos \
+            ARCHS="arm64" \
+            ONLY_ACTIVE_ARCH=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            clean build
+
+      - name: Zip Framework
+        run: |
+          cd build/Release-iphoneos
+          zip -r SDL3.framework.zip SDL3.framework
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDL3-iOS-Framework
+          path: build/Release-iphoneos/SDL3.framework.zip
