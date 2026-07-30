@@ -3,9 +3,9 @@ name: Development build
 on:
   pull_request:
     types: [opened, reopened]
-    branches: ['Amethyst-iOS-J25Exp', 'main']
+    branches: ['Amethyst-iOS-J25Exp']
   push:
-    branches: ['Amethyst-iOS-J25Exp', 'main']
+    branches: ['Amethyst-iOS-J25Exp']
   workflow_dispatch:
 
 jobs:
@@ -75,7 +75,7 @@ jobs:
           export JAVA_HOME="$JDK_BASE_PATH"
           export BOOTJDK="$JDK_BASE_PATH/bin"
           export SLIMMED=1
-          
+
           export CODE_SIGNING_ALLOWED=NO
           export CODE_SIGNING_REQUIRED=NO
           export CODE_SIGN_IDENTITY=""
@@ -87,62 +87,27 @@ jobs:
 
           # WARNING MITIGATION: Filter runtime stderr streams to suppress repetitive upstream vtool signature warnings
           gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=2 $SIGN_FLAGS 2> >(grep -v "vtool warning: code signature will be invalid" >&2)
-          
+
           gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=2 TROLLSTORE_JIT_ENT=1 $SIGN_FLAGS 2> >(grep -v "vtool warning: code signature will be invalid" >&2)
 
       - name: List artifacts
         if: always()
         run: ls -la artifacts/ || true
 
-      - name: Upload TrollStore tIPA (full)
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: org.angelauramc.amethyst-ios-trollstore
-          path: artifacts/org.angelauramc.amethyst-*-ios-trollstore.tipa
-          retention-days: 30
-          if-no-files-found: warn
-          compression-level: 0
-
-      - name: Upload TrollStore tIPA (slimmed)
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: org.angelauramc.amethyst-ios-trollstore-slimmed
-          path: artifacts/org.angelauramc.amethyst.slimmed-*-ios-trollstore.tipa
-          retention-days: 30
-          if-no-files-found: warn
-          compression-level: 0
-
-      - name: Upload regular IPA (full)
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: org.angelauramc.amethyst-ios
-          path: artifacts/org.angelauramc.amethyst-*-ios.ipa
-          retention-days: 30
-          if-no-files-found: warn
-          compression-level: 0
-
-      - name: Upload regular IPA (slimmed)
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: org.angelauramc.amethyst-ios-slimmed
-          path: artifacts/org.angelauramc.amethyst.slimmed-*-ios.ipa
-          retention-days: 30
-          if-no-files-found: warn
-          compression-level: 0
-
-      - name: Upload AngelAuraAmethyst.dSYM
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: AngelAuraAmethyst.dSYM
-          path: artifacts/AngelAuraAmethyst.dSYM
-          retention-days: 14
-          if-no-files-found: warn
-          compression-level: 0
+      - name: Upload to External Storage
+        if: success()
+        run: |
+          echo "Bypassing GitHub Storage Quota.."
+          if [ -d "artifacts" ]; then
+            cd artifacts
+            for file in *.ipa *.tipa; do
+              if [ -f "$file" ]; then
+                echo "Uploading $file.."
+                UPLOAD_URL=$(curl --connect-timeout 20 --max-time 180 -s -F "file=@$file" https://x0.at || echo "Upload failed/timed out")
+                echo "Download link: $UPLOAD_URL"
+              fi
+            done
+          fi
 
       # extract local compilation cmake diagnostic records upon unexpected pipeline failure
       - name: Upload build logs on failure
