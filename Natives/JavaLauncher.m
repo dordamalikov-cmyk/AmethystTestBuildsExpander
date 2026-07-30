@@ -181,54 +181,42 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
     }
 }
 
+static BOOL RuntimeSupportsDebugJITMapping(NSString *javaHome) {
+    NSString *marker = [javaHome
+        stringByAppendingPathComponent:@".amethyst-mirror-mapping"];
+    NSString *contents = [NSString stringWithContentsOfFile:marker
+        encoding:NSUTF8StringEncoding error:nil];
+    return [contents isEqualToString:@"amethyst-mirror-mapping-v1\n"];
+}
+
+static NSString *BundledDebugJITRuntime(int minimumVersion) {
+    NSArray<NSNumber *> *supportedVersions = @[@17, @21, @25];
+    for (NSNumber *version in supportedVersions) {
+        if (version.intValue < minimumVersion) continue;
+        NSString *javaHome = [NSString stringWithFormat:
+            @"%@/java_runtimes/java-%@-openjdk",
+            NSBundle.mainBundle.bundlePath, version];
+        if (RuntimeSupportsDebugJITMapping(javaHome)) {
+            return javaHome;
+        }
+    }
+    return nil;
+}
+
 int launchJVM(NSString *username, id launchTarget, int width, int height, int minVersion) {
     NSLog(@"[JavaLauncher] Beginning JVM launch");
+    const int requiredJavaVersion = minVersion;
 
     init_loadDefaultEnv();
     init_loadCustomEnv();
     init_loadMobileGluesConfig();
 
-    BOOL requiresTXMWorkaround = DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM);
+    // Custom environment variables may override JIT_FLAGS, so refresh after
+    // loading them. The debug-mapping decision is based on the executable-map
+    // capability test rather than probing Apple's private Preboot layout.
+    DeviceGetJITFlags(YES);
+    BOOL requiresDebugJITMapping = DeviceNeedsDebugJITMapping();
     BOOL jit26AlwaysAttached = getPrefBool(@"debug.debug_always_attached_jit");
-    if (requiresTXMWorkaround) {
-        static void *result;
-        if(!result) result = JIT26CreateRegionLegacy(getpagesize());
-        if ((uint32_t)result != 0x690000E0) {
-            munmap(result, getpagesize());
-            // we can't continue since legacy script only allows calling breakpoint once
-            NSString *inBundleScriptPath = [NSBundle.mainBundle pathForResource:@"UniversalJIT26" ofType:@"js"];
-            NSString *lcAppInfoPath = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"LCAppInfo.plist"];
-            NSMutableDictionary *lcAppInfo = [NSMutableDictionary dictionaryWithContentsOfFile:lcAppInfoPath];
-            if(lcAppInfo) {
-                // if this is inside LiveContainer, we assign script ourselves and prompt user to restart Amethyst
-                lcAppInfo[@"jitLaunchScriptJs"] = [[NSData dataWithContentsOfFile:inBundleScriptPath] base64EncodedStringWithOptions:0];
-                if([lcAppInfo writeToFile:lcAppInfoPath atomically:YES]) {
-                    showDialog(localize(@"Error", nil), @"Amethyst was launched with a legacy script. We have updated the script to Universal, please restart LiveContainer to continue.");
-                    [PLLogOutputView handleExitCode:1];
-                    return 1;
-                }
-            }
-            [NSFileManager.defaultManager copyItemAtPath:inBundleScriptPath toPath:[NSString stringWithFormat:@"%s/UniversalJIT26.js", getenv("POJAV_HOME")] error:nil];
-            showDialog(localize(@"Error", nil), @"Support for legacy script has been removed. Please switch to Universal JIT script. To import it, long-press on Amethyst when enabling JIT in StikDebug and tap \"Assign Script\", then go to Amethyst's Documents directory and pick it. (on sideloaded StikDebug, the builtin script is named Amethyst-MeloNX.js)");
-            [PLLogOutputView handleExitCode:1];
-            return 1;
-        }
-        JIT26SendJITScript([NSString stringWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"UniversalJIT26Extension" ofType:@"js"]]);
-        JIT26SetDetachAfterFirstBr(!jit26AlwaysAttached);
-        // make sure we don't get stuck in EXC_BAD_ACCESS
-        task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, 0, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
-    }
-    if (!requiresTXMWorkaround || jit26AlwaysAttached) {
-        if (jit26AlwaysAttached) {
-            // Only allow StikDebug to catch our breakpoints to prevent any stutters
-            task_set_exception_ports(mach_task_self(), EXC_MASK_ALL & ~EXC_MASK_BREAKPOINT, 0,
-                EXCEPTION_DEFAULT, THREAD_STATE_NONE);
-        }
-        // Activate Library Validation bypass for external runtime and dylibs (JNA, etc)
-        init_bypassDyldLibValidation();
-    } else {
-        NSLog(@"[DyldLVBypass] Hook disabled! Loading unsigned dylib will cause code signature error.");
-    }
 
     BOOL launchJar = NO;
     NSString *gameDir;
@@ -284,7 +272,28 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
         showDialog(localize(@"Error", nil), [NSString stringWithFormat:localize(@"java.error.missing_runtime", nil),
             isExecuteJar ? [launchTarget lastPathComponent] : PLProfiles.current.selectedProfile[@"lastVersionId"], minVersion]);
         return 1;
-    } else if ([javaHome hasPrefix:@(getenv("POJAV_HOME"))]) {
+    }
+
+    if (requiresDebugJITMapping && !RuntimeSupportsDebugJITMapping(javaHome)) {
+        // JRE 8 predates the mirror-mapping HotSpot option. On iOS 26.6+
+        // direct executable mappings are unavailable, so use the nearest
+        // bundled patched runtime instead of passing an unknown VM option or
+        // crashing in the old APRR path.
+        NSString *fallbackJavaHome = BundledDebugJITRuntime(MAX(minVersion, 17));
+        if (fallbackJavaHome == nil) {
+            UIKit_returnToSplitView();
+            showDialog(localize(@"Error", nil),
+                @"The selected Java runtime cannot create executable code on "
+                 "this iOS version. Install or select the bundled patched "
+                 "Java 17, 21, or 25 runtime.");
+            return 1;
+        }
+        NSLog(@"[JavaLauncher] Runtime %@ lacks debug JIT mapping support; "
+              "using bundled runtime %@", javaHome, fallbackJavaHome);
+        javaHome = fallbackJavaHome;
+    }
+
+    if ([javaHome hasPrefix:@(getenv("POJAV_HOME"))]) {
         // Symlink libawt_xawt.dylib
         NSString *dest = [NSString stringWithFormat:@"%@/lib/libawt_xawt.dylib", javaHome];
         NSString *source = [NSString stringWithFormat:@"%@/Frameworks/libawt_xawt.dylib", NSBundle.mainBundle.bundlePath];
@@ -297,6 +306,46 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
 
     setenv("JAVA_HOME", javaHome.UTF8String, 1);
     NSLog(@"[JavaLauncher] JAVA_HOME has been set to %@", javaHome);
+
+    if (requiresDebugJITMapping) {
+        static void *result;
+        if(!result) result = JIT26CreateRegionLegacy(getpagesize());
+        if ((uint32_t)result != 0x690000E0) {
+            munmap(result, getpagesize());
+            // we can't continue since legacy script only allows calling breakpoint once
+            NSString *inBundleScriptPath = [NSBundle.mainBundle pathForResource:@"UniversalJIT26" ofType:@"js"];
+            NSString *lcAppInfoPath = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"LCAppInfo.plist"];
+            NSMutableDictionary *lcAppInfo = [NSMutableDictionary dictionaryWithContentsOfFile:lcAppInfoPath];
+            if(lcAppInfo) {
+                // if this is inside LiveContainer, we assign script ourselves and prompt user to restart Amethyst
+                lcAppInfo[@"jitLaunchScriptJs"] = [[NSData dataWithContentsOfFile:inBundleScriptPath] base64EncodedStringWithOptions:0];
+                if([lcAppInfo writeToFile:lcAppInfoPath atomically:YES]) {
+                    showDialog(localize(@"Error", nil), @"Amethyst was launched with a legacy script. We have updated the script to Universal, please restart LiveContainer to continue.");
+                    [PLLogOutputView handleExitCode:1];
+                    return 1;
+                }
+            }
+            [NSFileManager.defaultManager copyItemAtPath:inBundleScriptPath toPath:[NSString stringWithFormat:@"%s/UniversalJIT26.js", getenv("POJAV_HOME")] error:nil];
+            showDialog(localize(@"Error", nil), @"Support for legacy script has been removed. Please switch to Universal JIT script. To import it, long-press on Amethyst when enabling JIT in StikDebug and tap \"Assign Script\", then go to Amethyst's Documents directory and pick it. (on sideloaded StikDebug, the builtin script is named Amethyst-MeloNX.js)");
+            [PLLogOutputView handleExitCode:1];
+            return 1;
+        }
+        JIT26SendJITScript([NSString stringWithContentsOfFile:[NSBundle.mainBundle pathForResource:@"UniversalJIT26Extension" ofType:@"js"]]);
+        JIT26SetDetachAfterFirstBr(!jit26AlwaysAttached);
+        // make sure we don't get stuck in EXC_BAD_ACCESS
+        task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, 0, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
+    }
+    if (!requiresDebugJITMapping || jit26AlwaysAttached) {
+        if (jit26AlwaysAttached) {
+            // Only allow StikDebug to catch our breakpoints to prevent any stutters
+            task_set_exception_ports(mach_task_self(), EXC_MASK_ALL & ~EXC_MASK_BREAKPOINT, 0,
+                EXCEPTION_DEFAULT, THREAD_STATE_NONE);
+        }
+        // Activate Library Validation bypass for external runtime and dylibs (JNA, etc)
+        init_bypassDyldLibValidation();
+    } else {
+        NSLog(@"[DyldLVBypass] Hook disabled! Loading unsigned dylib will cause code signature error.");
+    }
 
     int allocmem;
     if (getPrefBool(@"java.auto_ram")) {
@@ -340,8 +389,16 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     const char *glLibName = getenv("AMETHYST_RENDERER");
     if (glLibName) {
         if (!strcmp(glLibName, "auto")) {
-            // workaround only applies to 1.20.2+
-            glLibName = RENDERER_NAME_MTL_ANGLE;
+            // Minecraft versions that require Java 25 can reach texture-buffer
+            // paths unsupported by the bundled ANGLE build. Use MobileGlues
+            // for those versions while retaining the existing auto behavior
+            // for older games.
+            if (!launchJar && requiredJavaVersion >= 25) {
+                glLibName = RENDERER_NAME_MOBILEGLUES;
+                setenv("AMETHYST_RENDERER", glLibName, 1);
+            } else {
+                glLibName = RENDERER_NAME_MTL_ANGLE;
+            }
         }
         // libMoltenVK is a Vulkan loader, not a GL implementation; binding it as
         // opengl.libname makes LWJGL fail looking up GL symbols. The Vulkan
@@ -404,19 +461,12 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     margv[++margc] = "-XX:+UseParallelGC";
     margv[++margc] = "-XX:ParallelGCThreads=2";
 
-    // On iOS 26+, use mirror mapped JIT for better code cache performance.
-    // JDK 25 (jre25-ios-v1) has a bug in MirrorMappedCodeCache that causes
-    // SIGBUS in ScavengableNMethods::register_nmethod during JIT compilation.
-    // jre25-ios-v2 is supposed to fix this, but keep the flag off for Java 25
-    // until v2 is confirmed stable across all devices.
-    NSString *currentJavaHome = [NSString stringWithUTF8String:getenv("JAVA_HOME") ?: ""];
-    BOOL isJava25Home = [currentJavaHome containsString:@"java-25"];
-    if (@available(iOS 26.0, *)) {
-        if (!isJava25Home) {
-            margv[++margc] = "-XX:+MirrorMappedCodeCache";
-        }
+    // The patched runtimes interpret this flag as permission to request the
+    // debugger-backed RX mapping. Only enable it after the Universal JIT
+    // script has been selected for a device that cannot create RX mappings.
+    if (requiresDebugJITMapping) {
+        margv[++margc] = "-XX:+MirrorMappedCodeCache";
     }
-
     // Disable Forge 1.16.x early progress window
     margv[++margc] = "-Dfml.earlyprogresswindow=false";
 

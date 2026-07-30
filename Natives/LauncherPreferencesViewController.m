@@ -493,7 +493,7 @@
                 @"icon": @"app.connected.to.app.below.fill",
                 @"type": self.typeSwitch,
                 @"enableCondition": ^BOOL(){
-                    return DeviceHasJITFlags(JIT_FLAG_FORCE_MIRRORED | JIT_FLAG_HAS_TXM) && whenNotInGame();
+                    return DeviceNeedsDebugJITMapping() && whenNotInGame();
                 },
             },
             @{@"key": @"debug_skip_wait_jit",

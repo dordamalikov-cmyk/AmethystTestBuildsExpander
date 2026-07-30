@@ -1,4 +1,4 @@
-**iOS 27 BETA IS NOT SUPPORTED!**
+**All versions of iOS (14 and later), now work, including every version of iOS 26 and iOS 27 beta, with proper TXM logic!**
 
 **Mojang is moving the windowing and keyboard system from GLFW to SDL3, and I need help in order to make Amethyst use this. If anyone is able to assist, there is a post about it in Issues like always.**
 

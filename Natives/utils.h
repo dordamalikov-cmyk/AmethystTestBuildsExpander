@@ -77,6 +77,7 @@ typedef enum {
 } JITFlags;
 JITFlags DeviceGetJITFlags(BOOL refresh);
 BOOL DeviceHasJITFlags(JITFlags flags);
+BOOL DeviceNeedsDebugJITMapping(void);
 
 // Init functions
 void init_bypassDyldLibValidation();

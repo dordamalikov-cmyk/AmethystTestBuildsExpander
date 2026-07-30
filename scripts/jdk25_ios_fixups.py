@@ -16,7 +16,7 @@ from pathlib import Path
 JDK = Path(sys.argv[1] if len(sys.argv) > 1 else 'openjdk-25')
 os.chdir(JDK)
 
-ok = warn = skip = 0
+ok = warn = skip = required_failures = 0
 
 
 def patch(path, transformations, replace_all=False):
@@ -52,6 +52,23 @@ def patch(path, transformations, replace_all=False):
         ok += 1
     else:
         skip += 1
+
+
+def require_postcondition(path, label, markers):
+    """Fail the run unless every marker for a critical fix is present."""
+    global required_failures
+    p = Path(path)
+    if not p.exists():
+        print(f"  [ERROR] required {label}: missing file {path}")
+        required_failures += 1
+        return
+    source = p.read_text()
+    missing = [marker for marker in markers if marker not in source]
+    if missing:
+        print(f"  [ERROR] required {label}: postcondition is not satisfied")
+        required_failures += 1
+    else:
+        print(f"  [REQUIRED] {label}: verified")
 
 
 # 1. flags-ldflags.m4 — comment out OS_LDFLAGS for iOS (keeping JDK 25's
@@ -273,6 +290,42 @@ patch('make/modules/java.desktop/lib/AwtLibraries.gmk', [
      "ifeq ($(call isTargetOs, macosx_NOTIOS), true)\n  ##############################################################################\n  ## Build libawt_lwawt"),
 ])
 
+# 16b. The mirror_mapping patch tried to detect TXM by enumerating
+#      /private/preboot. Apple made that directory unreadable on iOS 26.6,
+#      so opendir returns null and the unchecked readdir call crashes during
+#      CodeCache initialization. MirrorMappedCodeCache is now a contract with
+#      the launcher: it is enabled only after the Universal JIT script has
+#      been installed and the device failed an executable-map capability test.
+#      Consequently HotSpot should always request the debugger mapping when
+#      this flag is enabled; filesystem-based hardware detection is both
+#      redundant and unsafe.
+patch('src/hotspot/os/bsd/os_bsd.cpp', [
+    ("mirror-flag-always-uses-debugger-mapping",
+     "bool DeviceRequiresTXMWorkaround() {\n"
+     "    if(__builtin_available(iOS 19.0, *)) {\n"
+     "        DIR *d = opendir(\"/private/preboot\");\n"
+     "        struct dirent *dir;\n"
+     "        char txmPath[PATH_MAX];\n"
+     "        while ((dir = readdir(d)) != NULL) {\n"
+     "            if(strlen(dir->d_name) == 96) {\n"
+     "                snprintf(txmPath, sizeof(txmPath), \"/private/preboot/%s/usr/standalone/firmware/FUD/Ap,TrustedExecutionMonitor.img4\", dir->d_name);\n"
+     "                break;\n"
+     "            }\n"
+     "        }\n"
+     "        closedir(d);\n"
+     "        return access(txmPath, F_OK) == 0;\n"
+     "    } else {\n"
+     "        return false;\n"
+     "    }\n"
+     "}",
+     "bool DeviceRequiresTXMWorkaround() {\n"
+     "    // The launcher enables MirrorMappedCodeCache only after installing\n"
+     "    // the Universal JIT script and detecting that direct RX mappings\n"
+     "    // are unavailable. Do not inspect Apple's private Preboot layout.\n"
+     "    return true;\n"
+     "}"),
+])
+
 # 17. JDK 21 patch swapped pthread_jit_write_protect_np() for jit_write_protect()
 #     defined in tcg-apple-jit.h, which uses APRR (Apple's old W^X mechanism).
 #     APRR is disabled on iPhone 17 / iOS 26 / A19 Pro (TXM hardware enforcement
@@ -367,6 +420,13 @@ patch('src/hotspot/share/code/nmethod.hpp', [
     ("set-osr-link-mirror-w-set",
      "  void     set_osr_link(nmethod *n) { _osr_link = n; }",
      "  void     set_osr_link(nmethod *n) { mirror_w_set(_osr_link) = n; }"),
+    # The JDK 21 mirror_mapping hunk for this setter was not present in the
+    # published JRE 25. ScavengableNMethodsData inlines it while registering a
+    # compiled method, so the missed conversion writes _gc_data through the RX
+    # alias and raises BUS_ADRALN in ScavengableNMethods::register_nmethod.
+    ("set-gc-data-mirror-w-set",
+     "  void set_gc_data(T* gc_data)                    { _gc_data = reinterpret_cast<void*>(gc_data); }",
+     "  void set_gc_data(T* gc_data)                    { mirror_w_set(_gc_data) = reinterpret_cast<void*>(gc_data); }"),
 ])
 
 # 29. nmethod.cpp Atomic ops + direct field writes that fault when `this`
@@ -806,10 +866,25 @@ patch('src/hotspot/share/code/nmethod.cpp', [
 # Phase 2 ports the mirror_mapping HotSpot patch which uses vm_remap dual
 # mappings instead — that's the only proven JIT path on iOS 26 + TXM.
 
+require_postcondition(
+    'src/hotspot/os/bsd/os_bsd.cpp',
+    'debugger-mapping detector',
+    (
+        'bool DeviceRequiresTXMWorkaround() {',
+        'Do not inspect Apple\'s private Preboot layout.',
+        '    return true;\n}',
+    ),
+)
+require_postcondition(
+    'src/hotspot/share/code/nmethod.hpp',
+    'nmethod GC metadata mirror write',
+    (
+        'void set_gc_data(T* gc_data)',
+        'mirror_w_set(_gc_data) = reinterpret_cast<void*>(gc_data);',
+    ),
+)
+
 print(f"\nfixups: ok={ok} skip={skip} warn={warn}")
-# Don't exit non-zero on WARN — apply_rejs.py + patch -F 100 may have already
-# applied the same change in a slightly different form (e.g. base patch's
-# `ifeq (false, true)` vs fixup's `macosx_NOTIOS`). Both achieve the iOS skip,
-# the file just doesn't have the fixup's expected `old` text anymore. Workflow
-# also wraps this script in `|| echo` for a second layer of defense.
-sys.exit(0)
+if required_failures:
+    print(f"fixups: required failures={required_failures}")
+sys.exit(1 if required_failures else 0)

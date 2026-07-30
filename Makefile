@@ -293,6 +293,10 @@ jre: native
 	if [ -f "$(ls jre*.tar.xz)" ]; then rm $(SOURCEDIR)/depends/jre*.tar.xz; fi; \
 	cd $(SOURCEDIR); \
 	bash $(SOURCEDIR)/scripts/build_jre25.sh; \
+	python3 $(SOURCEDIR)/scripts/patch_jre_mirror_runtime.py 17 $(POJAV_JRE17_DIR)/lib/server/libjvm.dylib; \
+	python3 $(SOURCEDIR)/scripts/patch_jre_mirror_runtime.py --check 17 $(POJAV_JRE17_DIR)/lib/server/libjvm.dylib; \
+	python3 $(SOURCEDIR)/scripts/patch_jre_mirror_runtime.py 21 $(POJAV_JRE21_DIR)/lib/server/libjvm.dylib; \
+	python3 $(SOURCEDIR)/scripts/patch_jre_mirror_runtime.py --check 21 $(POJAV_JRE21_DIR)/lib/server/libjvm.dylib; \
 	rm -rf $(SOURCEDIR)/depends/java-{8,17,21}-openjdk/{ASSEMBLY_EXCEPTION,bin,include,jre,legal,LICENSE,man,THIRD_PARTY_README,lib/{ct.sym,jspawnhelper,libjsig.dylib,src.zip,tools.jar}}; \
 	$(call METHOD_DIRCHECK,$(OUTPUTDIR)/java_runtimes); \
 	cp -R $(POJAV_JRE8_DIR) $(OUTPUTDIR)/java_runtimes; \
