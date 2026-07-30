@@ -149,10 +149,10 @@ METHOD_PACKAGE = \
 		IPA_SUFFIX=".ipa"; \
 	fi; \
 	if [ '$(SLIMMED_ONLY)' = '0' ]; then \
-		zip --symlinks -r $(OUTPUTDIR)/org.angelauramc.amethyst-$(VERSION)-$(PLATFORM_NAME)$$IPA_SUFFIX Payload; \
+		zip -r $(OUTPUTDIR)/org.angelauramc.amethyst-$(VERSION)-$(PLATFORM_NAME)$$IPA_SUFFIX Payload; \
 	fi; \
 	if [ '$(SLIMMED)' = '1' ] || [ '$(SLIMMED_ONLY)' = '1' ]; then \
-		zip --symlinks -r $(OUTPUTDIR)/org.angelauramc.amethyst.slimmed-$(VERSION)-$(PLATFORM_NAME)$$IPA_SUFFIX Payload --exclude='Payload/AngelAuraAmethyst.app/java_runtimes/*'; \
+		zip -r $(OUTPUTDIR)/org.angelauramc.amethyst.slimmed-$(VERSION)-$(PLATFORM_NAME)$$IPA_SUFFIX Payload --exclude='Payload/AngelAuraAmethyst.app/java_runtimes/*'; \
 	fi
 
 # Function to download and unpack Java runtimes.
@@ -299,10 +299,10 @@ jre: native
 	python3 $(SOURCEDIR)/scripts/patch_jre_mirror_runtime.py --check 21 $(POJAV_JRE21_DIR)/lib/server/libjvm.dylib; \
 	rm -rf $(SOURCEDIR)/depends/java-{8,17,21}-openjdk/{ASSEMBLY_EXCEPTION,bin,include,jre,legal,LICENSE,man,THIRD_PARTY_README,lib/{ct.sym,jspawnhelper,libjsig.dylib,src.zip,tools.jar}}; \
 	$(call METHOD_DIRCHECK,$(OUTPUTDIR)/java_runtimes); \
-	cp -R $(POJAV_JRE8_DIR) $(OUTPUTDIR)/java_runtimes; \
-	cp -R $(POJAV_JRE17_DIR) $(OUTPUTDIR)/java_runtimes; \
-	cp -R $(POJAV_JRE21_DIR) $(OUTPUTDIR)/java_runtimes; \
-	cp -R $(POJAV_JRE25_DIR) $(OUTPUTDIR)/java_runtimes; \
+	cp -RL $(POJAV_JRE8_DIR) $(OUTPUTDIR)/java_runtimes; \
+	cp -RL $(POJAV_JRE17_DIR) $(OUTPUTDIR)/java_runtimes; \
+	cp -RL $(POJAV_JRE21_DIR) $(OUTPUTDIR)/java_runtimes; \
+	cp -RL $(POJAV_JRE25_DIR) $(OUTPUTDIR)/java_runtimes; \
 	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-8-openjdk/lib; \
 	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-17-openjdk/lib;
 	cp $(WORKINGDIR)/libawt_xawt.dylib $(OUTPUTDIR)/java_runtimes/java-21-openjdk/lib
@@ -359,7 +359,7 @@ payload: native dep_mg java jre assets
 	$(call METHOD_DIRCHECK,$(OUTPUTDIR)/Payload)
 	cp -R $(WORKINGDIR)/AngelAuraAmethyst.app $(OUTPUTDIR)/Payload
 	if [ '$(SLIMMED_ONLY)' != '1' ]; then \
-		cp -R $(OUTPUTDIR)/java_runtimes $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app; \
+		cp -RL $(OUTPUTDIR)/java_runtimes $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app; \
 	fi
 	ldid -S $(OUTPUTDIR)/Payload/AngelAuraAmethyst.app; \
 	if [ '$(TROLLSTORE_JIT_ENT)' == '1' ]; then \
@@ -418,7 +418,7 @@ package: payload
 	fi
 	cd $(OUTPUTDIR); \
 	$(call METHOD_PACKAGE); \
-	zip --symlinks -r $(OUTPUTDIR)/java_runtimes.zip java_runtimes; \
+	zip -r $(OUTPUTDIR)/java_runtimes.zip java_runtimes; \
 	echo '[Amethyst v$(VERSION)] package - end'
 	
 dsym: payload
