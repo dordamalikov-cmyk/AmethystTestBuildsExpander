@@ -465,12 +465,29 @@ static void *ProgressObserverContext = &ProgressObserverContext;
     [self presentViewController:alert animated:YES completion:nil];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        while (!isJITEnabled(false)) {
+        // If the external JIT enabler (StikDebug, SideStore, TrollStore) is not
+        // reachable or refuses to enable JIT, do not block the user forever.
+        // Wait up to 60 seconds, then fail with a clear error instead of hanging
+        // on "Waiting for JIT" with no way out.
+        const NSTimeInterval kJITWaitTimeout = 60.0;
+        CFAbsoluteTime waitStart = CFAbsoluteTimeGetCurrent();
+        while (!isJITEnabled(false) && (CFAbsoluteTimeGetCurrent() - waitStart) < kJITWaitTimeout) {
             // Perform check for every 200ms
             usleep(1000*200);
         }
+        BOOL jitEnabled = isJITEnabled(false);
         dispatch_async(dispatch_get_main_queue(), ^{
-            [alert dismissViewControllerAnimated:YES completion:handler];
+            [alert dismissViewControllerAnimated:YES completion:^{
+                if (jitEnabled) {
+                    handler();
+                } else {
+                    UIAlertController *failure = [UIAlertController alertControllerWithTitle:localize(@"login.jit.fail.title", nil)
+                        message:localize(@"login.jit.fail.description", nil)
+                        preferredStyle:UIAlertControllerStyleAlert];
+                    [failure addAction:[UIAlertAction actionWithTitle:localize(@"OK", nil) style:UIAlertActionStyleDefault handler:nil]];
+                    [self presentViewController:failure animated:YES completion:nil];
+                }
+            }];
         });
     });
 }
