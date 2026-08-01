@@ -32,6 +32,31 @@ int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *bu
 static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
 
+// ---- SDL3 ABI mirror for the native surface-ready event watch (SDL_events.h, 3.4.0) ----
+// org.lwjgl.sdl.SDL is a stub, so window events are captured natively from the bundled
+// libSDL3.dylib that the game loads. SDL_Event.type is the first 32-bit field of the struct.
+typedef uint32_t SDL3_EventType;
+typedef int  (*SDL3_EventFilter)(void *userdata, void *event);      // SDL_bool (SDLCALL *)(void*, SDL_Event*)
+typedef bool (*SDL3_AddEventWatchFn)(SDL3_EventFilter filter, void *userdata);
+typedef bool (*SDL3_DelEventWatchFn)(SDL3_EventFilter filter, void *userdata);
+
+enum {
+    SDL3_EVENT_WINDOW_SHOWN              = 0x202,
+    SDL3_EVENT_WINDOW_HIDDEN             = 0x203,
+    SDL3_EVENT_WINDOW_EXPOSED            = 0x204,
+    SDL3_EVENT_WINDOW_MOVED              = 0x205,
+    SDL3_EVENT_WINDOW_RESIZED            = 0x206,
+    SDL3_EVENT_WINDOW_PIXEL_SIZE_CHANGED = 0x207,
+    SDL3_EVENT_WINDOW_MINIMIZED          = 0x208,
+    SDL3_EVENT_WINDOW_MAXIMIZED          = 0x209,
+};
+
+static SDL3_EventFilter     g_sdlFilter = NULL;
+static SDL3_DelEventWatchFn g_sdlDelWatch = NULL;
+static __weak SurfaceViewController *g_sdlSurfaceVC = NULL;   // weak — auto-nils after dealloc
+static dispatch_source_t    g_sdlSafetyTimer = NULL;
+static BOOL                 g_sdlSurfaceSynced = NO;
+
 @interface SurfaceViewController ()<UITextFieldDelegate, UIGestureRecognizerDelegate> {
 }
 
@@ -59,7 +84,31 @@ static GameSurfaceView* pojavWindow;
 @property(nonatomic) UIImpactFeedbackGenerator *lightHaptic;
 @property(nonatomic) UIImpactFeedbackGenerator *mediumHaptic;
 
+- (void)installSDLSurfaceWatch;
+- (void)uninstallSDLSurfaceWatch;
+- (void)sdlSurfaceReady:(BOOL)fromEvent;
+
 @end
+
+// Called on the game's SDL event-pumping thread; hop to main before touching UIKit.
+static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
+    SurfaceViewController *vc = g_sdlSurfaceVC;   // weak — nil once the VC is gone
+    if (!vc) return 0;
+    switch (((SDL3_EventType *)event)[0]) {
+        case SDL3_EVENT_WINDOW_SHOWN:
+        case SDL3_EVENT_WINDOW_EXPOSED:
+        case SDL3_EVENT_WINDOW_RESIZED:
+        case SDL3_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [vc sdlSurfaceReady:YES];
+            });
+            break;
+        }
+        default:
+            break;
+    }
+    return 0; // SDL_FALSE — keep the event in the queue
+}
 
 @implementation SurfaceViewController
 
@@ -67,6 +116,12 @@ static GameSurfaceView* pojavWindow;
     self = [super init];
     self.metadata = metadata;
     return self;
+}
+
+- (void)dealloc {
+    // Remove the SDL event watch so the filter never fires into a deallocated
+    // SurfaceViewController (e.g. on relaunch).
+    [self uninstallSDLSurfaceWatch];
 }
 
 - (void)viewDidLoad
@@ -479,6 +534,81 @@ static GameSurfaceView* pojavWindow;
     [self updateControlHiddenState:NO];
 }
 
+- (void)installSDLSurfaceWatch {
+    NSString *path = [NSBundle.mainBundle.privateFrameworksPath
+                      stringByAppendingPathComponent:@"libSDL3.dylib"];
+    void *sdl = dlopen(path.UTF8String, RTLD_NOW);   // already loaded by the game — refcount++
+    if (!sdl) {
+        NSLog(@"[SDL Watch] dlopen libSDL3 failed: %s", dlerror());
+    } else {
+        SDL3_AddEventWatchFn addWatch = (SDL3_AddEventWatchFn)dlsym(sdl, "SDL_AddEventWatch");
+        g_sdlDelWatch = (SDL3_DelEventWatchFn)dlsym(sdl, "SDL_DelEventWatch");
+        if (!addWatch || !g_sdlDelWatch) {
+            NSLog(@"[SDL Watch] dlsym(SDL_AddEventWatch/SDL_DelEventWatch) failed");
+        } else {
+            if (g_sdlFilter) {   // re-registration: remove the old filter first
+                g_sdlDelWatch(g_sdlFilter, NULL);
+                g_sdlFilter = NULL;
+            }
+            g_sdlSurfaceVC = self;
+            bool ok = addWatch(SurfaceSDLSurfaceEventFilter, NULL);
+            g_sdlFilter = ok ? SurfaceSDLSurfaceEventFilter : NULL;
+            NSLog(@"[SDL Watch] SDL_AddEventWatch %@", ok ? @"registered" : @"failed");
+        }
+    }
+
+    // Safety fallback: if no window event arrives (e.g. the renderer creates no
+    // SDL window), sync once after 5s so coordinates are never left stale.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (g_sdlSafetyTimer) {
+            dispatch_source_cancel(g_sdlSafetyTimer);
+        }
+        g_sdlSafetyTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                                  dispatch_get_main_queue());
+        dispatch_source_set_timer(g_sdlSafetyTimer,
+                                  dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)),
+                                  DISPATCH_TIME_FOREVER, 0);
+        __weak SurfaceViewController *weakSelf = self;
+        dispatch_source_set_event_handler(g_sdlSafetyTimer, ^{
+            if (!g_sdlSurfaceSynced) {
+                NSLog(@"[SDL Watch] No SDL window event within 5s — fallback sync");
+                [weakSelf sdlSurfaceReady:NO];
+            } else {
+                // A real event already synced the surface; just drop the timer.
+                g_sdlSafetyTimer = NULL;
+            }
+        });
+        dispatch_resume(g_sdlSafetyTimer);
+    });
+}
+
+- (void)uninstallSDLSurfaceWatch {
+    if (g_sdlDelWatch && g_sdlFilter) {
+        g_sdlDelWatch(g_sdlFilter, NULL);
+    }
+    g_sdlFilter = NULL;
+    g_sdlSurfaceVC = nil;
+    if (g_sdlSafetyTimer) {
+        dispatch_source_cancel(g_sdlSafetyTimer);
+        g_sdlSafetyTimer = NULL;
+    }
+}
+
+- (void)sdlSurfaceReady:(BOOL)fromEvent {
+    NSLog(@"[SDL Watch] surface ready via %@", fromEvent ? @"SDL event" : @"safety fallback");
+    // First firing (real event or safety fallback) stops the timer and dumps the
+    // hierarchy once for the z-order diagnosis. Runs on the main thread.
+    if (g_sdlSafetyTimer) {
+        dispatch_source_cancel(g_sdlSafetyTimer);
+        g_sdlSafetyTimer = NULL;
+    }
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ [self dumpViewHierarchyDebug]; });
+    [self updateSavedResolution];   // sync coordinates at true surface-ready time
+    [self fixSDLViewZOrder];        // keep touch controls above the SDL view
+    g_sdlSurfaceSynced = YES;
+}
+
 - (void)launchMinecraft {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         int minVersion = [self.metadata[@"javaVersion"][@"majorVersion"] intValue];
@@ -492,22 +622,13 @@ static GameSurfaceView* pojavWindow;
             minVersion
         );
 
-        // Debug: Dump view hierarchy after JVM launches (SDL may create views)
-        // Wait a bit for SDL to initialize
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self dumpViewHierarchyDebug];
-
-            // Fix coordinate sync issue: Force resolution/coordinate recalculation
-            // after SDL3 initializes. This ensures screenScale and windowWidth/Height
-            // are properly synchronized with SDL's surface, fixing the coordinate
-            // misalignment bug (coordinates work correctly after device rotation
-            // because viewWillTransitionToSize calls updateSavedResolution).
-            [self updateSavedResolution];
-
-            // Fix z-order issue: Ensure ctrlView (touch controls) stays on top
-            // after SDL3 creates its view. SDL may add its view above ctrlView,
-            // making controls invisible.
-            [self fixSDLViewZOrder];
+        // True event-based surface-ready signal: watch the game's SDL3 window
+        // events instead of guessing with a fixed 2-second delay. Fires exactly
+        // when the window is shown/resized — the moment the surface size is final
+        // and coordinate sync is safe. A 5s safety timer covers the case where no
+        // window event is ever delivered.
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self installSDLSurfaceWatch];
         });
     });
 }
