@@ -79,8 +79,17 @@ int pojavInitOpenGL() {
         set_vk_bridge_tbl();
     }
     JNI_LWJGL_changeRenderer(renderer.UTF8String);
+
     // Preload renderer library
-    dlopen([NSString stringWithFormat:@"@rpath/%@", renderer].UTF8String, RTLD_GLOBAL);
+    // Use RTLD_LOCAL instead of RTLD_GLOBAL for OSMesa/Zink to prevent
+    // symbol collision with SDL3's OpenGL backend in Minecraft 26.3+.
+    // SDL3 (used by LWJGL 3.4.1) creates its own GL context and will crash
+    // with "OpenGL library already loaded" if it finds our symbols globally.
+    int dlopen_flags = [renderer hasPrefix:@"libOSMesa"] ? RTLD_LOCAL : RTLD_GLOBAL;
+    void* handle = dlopen([NSString stringWithFormat:@"@rpath/%@", renderer].UTF8String, dlopen_flags);
+    if (!handle) {
+        NSLog(@"[egl_bridge] Warning: Failed to preload renderer %@: %s", renderer, dlerror());
+    }
 
     return !br_init();
     //return 0;

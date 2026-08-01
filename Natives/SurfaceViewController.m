@@ -496,8 +496,45 @@ static GameSurfaceView* pojavWindow;
         // Wait a bit for SDL to initialize
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             [self dumpViewHierarchyDebug];
+
+            // Fix coordinate sync issue: Force resolution/coordinate recalculation
+            // after SDL3 initializes. This ensures screenScale and windowWidth/Height
+            // are properly synchronized with SDL's surface, fixing the coordinate
+            // misalignment bug (coordinates work correctly after device rotation
+            // because viewWillTransitionToSize calls updateSavedResolution).
+            [self updateSavedResolution];
+
+            // Fix z-order issue: Ensure ctrlView (touch controls) stays on top
+            // after SDL3 creates its view. SDL may add its view above ctrlView,
+            // making controls invisible.
+            [self fixSDLViewZOrder];
         });
     });
+}
+
+- (void)fixSDLViewZOrder {
+    // Search for SDL-created views in the hierarchy and ensure ctrlView is above them
+    NSLog(@"[SDL Z-Order Fix] Checking view hierarchy...");
+
+    // Check if ctrlView is still the topmost subview in rootView
+    if (self.ctrlView.superview == self.rootView) {
+        NSInteger ctrlIndex = [self.rootView.subviews indexOfObject:self.ctrlView];
+        NSInteger lastIndex = self.rootView.subviews.count - 1;
+
+        if (ctrlIndex != NSNotFound && ctrlIndex != lastIndex) {
+            NSLog(@"[SDL Z-Order Fix] ctrlView is NOT topmost (index %ld of %ld), bringing to front",
+                  (long)ctrlIndex, (long)lastIndex);
+            [self.rootView bringSubviewToFront:self.ctrlView];
+        } else {
+            NSLog(@"[SDL Z-Order Fix] ctrlView is already topmost (index %ld)", (long)ctrlIndex);
+        }
+    }
+
+    // Also ensure ctrlView is not accidentally hidden
+    if (self.ctrlView.hidden && !self.toggleHidden) {
+        NSLog(@"[SDL Z-Order Fix] ctrlView was hidden, restoring visibility");
+        self.ctrlView.hidden = NO;
+    }
 }
 
 - (void)dumpViewHierarchyDebug {
