@@ -49,9 +49,15 @@ build_version() {
 
     echo "[build_lwjgl] === Building LWJGL $build_type from $src_dir ==="
 
+    # If prebuilt jars exist and sources are missing (CI scenario), skip the build.
     if [ ! -d "$LWJGL_LIB/$src_dir" ]; then
-        echo "Error: LWJGL source directory not found: $LWJGL_LIB/$src_dir" >&2
-        exit 1
+        if compgen -G "$out_dir/lwjgl*.jar" >/dev/null; then
+            echo "[build_lwjgl] Source directory not found but prebuilt jars exist in $out_dir, skipping build"
+            return 0
+        else
+            echo "Error: LWJGL source directory not found: $LWJGL_LIB/$src_dir and no prebuilt jars in $out_dir" >&2
+            exit 1
+        fi
     fi
 
     # Skip the build if it is already up to date (sources unchanged).
