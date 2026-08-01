@@ -444,6 +444,9 @@ int launchJVM(NSString *username, id launchTarget, int width, int height, int mi
     // liblibspirv-cross-c-shared.0.dylib.dylib).
     margv[++margc] = "-Dorg.lwjgl.spvc.libname=spirv-cross-c-shared.0";
 
+    // Configure SDL3 library name for LWJGL 3.4.1+ compatibility
+    margv[++margc] = "-Dorg.lwjgl.sdl.libname=SDL3";
+
     NSString *librariesPath = [NSString stringWithFormat:@"%@/libs", NSBundle.mainBundle.bundlePath];
     margv[++margc] = [NSString stringWithFormat:@"-javaagent:%@/patchjna_agent.jar=", librariesPath].UTF8String;
     if(getPrefBool(@"general.cosmetica")) {
