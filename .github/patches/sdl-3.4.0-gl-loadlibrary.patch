@@ -1,0 +1,13 @@
+diff --git a/src/video/SDL_video.c b/src/video/SDL_video.c
+--- a/src/video/SDL_video.c
++++ b/src/video/SDL_video.c
+@@ -4708,9 +4708,6 @@ bool SDL_GL_LoadLibrary(const char *path)
+     if (!_this) {
+         return SDL_UninitializedVideo();
+     }
+     if (_this->gl_config.driver_loaded) {
+-        if (path && SDL_strcmp(path, _this->gl_config.driver_path) != 0) {
+-            return SDL_SetError("OpenGL library already loaded");
+-        }
+         result = true;
+     } else {

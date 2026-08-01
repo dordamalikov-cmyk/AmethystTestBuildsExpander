@@ -7,13 +7,29 @@ jobs:
   build-ios:
     runs-on: macos-latest
     steps:
-      - name: Checkout SDL3
+      - name: Checkout SDL3 (pinned to release-3.4.0 to match the bundled libSDL3.dylib)
         uses: actions/checkout@v4
         with:
           repository: libsdl-org/SDL
-          ref: main
+          ref: release-3.4.0
+          path: sdl
+
+      # The patch lives in this repo; check it out alongside SDL so the build can apply it.
+      - name: Checkout Amethyst (patch file)
+        uses: actions/checkout@v4
+        with:
+          path: amethyst
+
+      # iOS: SDL_GL_LoadLibrary(path) fails with "OpenGL library already loaded"
+      # when the GL driver was already selected by SDL_CreateWindow(SDL_WINDOW_OPENGL).
+      # On iOS there is a single GL (OpenGLES), so reusing the loaded driver is correct.
+      - name: Apply Amethyst patch (SDL_GL_LoadLibrary tolerates already-loaded driver)
+        working-directory: sdl
+        run: |
+          git apply ../amethyst/.github/patches/sdl-3.4.0-gl-loadlibrary.patch
 
       - name: Build Framework for iOS Device (arm64)
+        working-directory: sdl
         run: |
           xcodebuild -project Xcode-iOS/SDL/SDL.xcodeproj \
             -scheme "Framework-iOS" \
@@ -25,6 +41,7 @@ jobs:
             clean build
 
       - name: Zip Framework
+        working-directory: sdl
         run: |
           cd build/Release-iphoneos
           zip -r SDL3.framework.zip SDL3.framework
@@ -33,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SDL3-iOS-Framework
-          path: build/Release-iphoneos/SDL3.framework.zip
+          path: sdl/build/Release-iphoneos/SDL3.framework.zip
