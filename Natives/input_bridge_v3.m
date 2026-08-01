@@ -212,11 +212,39 @@ void registerOpenHandler(JNIEnv *env) {
 
 // JNI_OnLoad
 void JNI_OnLoadGLFW() {
-    vmGlfwClass = (*runtimeJNIEnvPtr)->NewGlobalRef(runtimeJNIEnvPtr, (*runtimeJNIEnvPtr)->FindClass(runtimeJNIEnvPtr, "org/lwjgl/glfw/GLFW"));
+    if (runtimeJNIEnvPtr == NULL) {
+        NSLog(@"[JNI] JNI_OnLoadGLFW: runtimeJNIEnvPtr is NULL, skipping");
+        return;
+    }
+    jclass clazz = (*runtimeJNIEnvPtr)->FindClass(runtimeJNIEnvPtr, "org/lwjgl/glfw/GLFW");
+    if (clazz == NULL) {
+        if ((*runtimeJNIEnvPtr)->ExceptionOccurred(runtimeJNIEnvPtr)) {
+            (*runtimeJNIEnvPtr)->ExceptionDescribe(runtimeJNIEnvPtr);
+            (*runtimeJNIEnvPtr)->ExceptionClear(runtimeJNIEnvPtr);
+        }
+        NSLog(@"[JNI] JNI_OnLoadGLFW: FindClass(org/lwjgl/glfw/GLFW) returned NULL, skipping registration");
+        return;
+    }
+    vmGlfwClass = (*runtimeJNIEnvPtr)->NewGlobalRef(runtimeJNIEnvPtr, clazz);
     method_internalWindowSizeChanged = (*runtimeJNIEnvPtr)->GetStaticMethodID(runtimeJNIEnvPtr, vmGlfwClass, "internalWindowSizeChanged", "(JII)V");
+    if ((*runtimeJNIEnvPtr)->ExceptionOccurred(runtimeJNIEnvPtr)) {
+        (*runtimeJNIEnvPtr)->ExceptionDescribe(runtimeJNIEnvPtr);
+        (*runtimeJNIEnvPtr)->ExceptionClear(runtimeJNIEnvPtr);
+        method_internalWindowSizeChanged = NULL;
+    }
     jfieldID field_keyDownBuffer = (*runtimeJNIEnvPtr)->GetStaticFieldID(runtimeJNIEnvPtr, vmGlfwClass, "keyDownBuffer", "Ljava/nio/ByteBuffer;");
-    jobject keyDownBufferJ = (*runtimeJNIEnvPtr)->GetStaticObjectField(runtimeJNIEnvPtr, vmGlfwClass, field_keyDownBuffer);
-    keyDownBuffer = (*runtimeJNIEnvPtr)->GetDirectBufferAddress(runtimeJNIEnvPtr, keyDownBufferJ);
+    if ((*runtimeJNIEnvPtr)->ExceptionOccurred(runtimeJNIEnvPtr)) {
+        (*runtimeJNIEnvPtr)->ExceptionDescribe(runtimeJNIEnvPtr);
+        (*runtimeJNIEnvPtr)->ExceptionClear(runtimeJNIEnvPtr);
+        field_keyDownBuffer = NULL;
+    }
+    if (field_keyDownBuffer != NULL) {
+        jobject keyDownBufferJ = (*runtimeJNIEnvPtr)->GetStaticObjectField(runtimeJNIEnvPtr, vmGlfwClass, field_keyDownBuffer);
+        if (keyDownBufferJ != NULL) {
+            keyDownBuffer = (*runtimeJNIEnvPtr)->GetDirectBufferAddress(runtimeJNIEnvPtr, keyDownBufferJ);
+        }
+    }
+    NSLog(@"[JNI] JNI_OnLoadGLFW registered, class=%p, method=%p, keyDownBuffer=%p", (void *)vmGlfwClass, (void *)method_internalWindowSizeChanged, (void *)keyDownBuffer);
 }
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {

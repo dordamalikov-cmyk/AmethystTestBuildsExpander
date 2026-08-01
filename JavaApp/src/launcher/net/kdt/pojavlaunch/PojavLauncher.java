@@ -89,6 +89,22 @@ public class PojavLauncher {
         MinecraftAccount account = MinecraftAccount.load(args[0]);
         JMinecraftVersionList.Version version = Tools.getVersionInfo(args[1]);
         System.out.println("Launching Minecraft " + version.id);
+        String activeLwjgl = System.getProperty("pojav.lwjgl.version");
+        if (activeLwjgl != null) {
+            // Sanity check: the jar on the classpath must match the version
+            // the native launcher selected, otherwise the wrong LWJGL will be
+            // used (e.g. a stale libs/lwjgl.jar shipped next to the versioned
+            // sets). org.lwjgl.Version comes from whichever lwjgl jar the
+            // classpath resolved first.
+            try {
+                String versionStr = Class.forName("org.lwjgl.Version").getMethod("getVersion").invoke(null).toString();
+                System.out.println("[PojavLauncher] LWJGL selected by launcher: " + activeLwjgl
+                    + ", LWJGL on classpath: " + versionStr);
+            } catch (ReflectiveOperationException e) {
+                System.out.println("[PojavLauncher] LWJGL selected by launcher: " + activeLwjgl
+                    + ", failed to read org.lwjgl.Version: " + e);
+            }
+        }
         String configPath;
         if (version.logging != null) {
             if (version.logging.client.file.id.equals("client-1.12.xml")) {

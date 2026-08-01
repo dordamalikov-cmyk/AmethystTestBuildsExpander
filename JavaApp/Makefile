@@ -8,8 +8,12 @@ CLASSES := $(SOURCES:$(SOURCEDIR)/%.java=$(OUTPUTDIR)/%.class)
 TARGETS := $(shell find $(SOURCEDIR) -mindepth 1 -maxdepth 1 -type d)
 TARGETS := $(TARGETS:$(SOURCEDIR)/%=$(OUTPUTDIR)/%.jar)
 
-# Add all jars to classpath and allow compiling with private API
-JCFLAGS := -cp "$(subst $() $(),:,$(wildcard $(SOURCEDIR)/*/):$(wildcard libs/*/*.jar))" -XDignore.symbol.file
+# The launcher compiles against the old prebuilt Amethyst LWJGL jars
+# (libs/lwjgl), which contain the expected API surface (e.g.
+# GLFW.mGLFWWindowWidth). They must come BEFORE the freshly built stock sets
+# (libs/lwjgl-333, libs/lwjgl-341), whose vanilla GLFW class lacks those
+# fields. At runtime only the merged versioned jars are used.
+JCFLAGS := -cp "$(subst $() $(),:,$(wildcard $(SOURCEDIR)/*/):$(wildcard libs/lwjgl/*.jar):$(wildcard libs/lwjgl-333/*.jar):$(wildcard libs/lwjgl-341/*.jar):$(wildcard libs/others/*.jar):$(wildcard libs/caciocavallo/*.jar):$(wildcard libs/caciocavallo17/*.jar))" -XDignore.symbol.file
 
 all: $(TARGETS)
 	
@@ -24,14 +28,21 @@ check_empty_classes:
 	fi
 
 # Rules for building java class
+#
+# Each source file is compiled into its OWN output directory
+# (build/classes/<path-with-underscores>). javac implicitly recompiles other
+# sources it depends on, and with a shared -d directory two parallel javac
+# invocations could write the same class file concurrently; the jar rules'
+# check_empty_classes then catches the resulting 0-byte file. Per-file output
+# dirs make every cp copy only files written by the javac invocation that just
+# completed, so the race cannot happen.
 $(CLASSES): $(OUTPUTDIR)/%.class: $(SOURCEDIR)/%.java
-	@set -e
-	$(eval TARGET=$(word 2, $(subst /, ,$@)))
-	@mkdir -p $(OUTPUTDIR)/classes
-	@mkdir -p $(dir $@)
-	@echo "Compiling $<"
-	@$(BOOTJDK)/javac $(JCFLAGS) -d $(OUTPUTDIR)/classes $<
-	@cp $(@:$(OUTPUTDIR)/$(TARGET)/%.class=$(OUTPUTDIR)/classes/%*.class) $(dir $@)/
+	@set -e; \
+	CLASSDIR="$(OUTPUTDIR)/classes/$(subst /,_,$*)"; \
+	mkdir -p "$$CLASSDIR" "$(dir $@)"; \
+	echo "Compiling $<"; \
+	$(BOOTJDK)/javac $(JCFLAGS) -d "$$CLASSDIR" $<; \
+	cp "$$CLASSDIR/$(patsubst $(word 2, $(subst /, ,$@))/%,%,$*)"*.class "$(dir $@)/"
 
 $(OUTPUTDIR)/launcher.jar: $(CLASSES) check_empty_classes
 	@set -e
@@ -39,18 +50,27 @@ $(OUTPUTDIR)/launcher.jar: $(CLASSES) check_empty_classes
 	@cp -r $(SOURCEDIR)/launcher/META-INF $(basename $@)/ 2>/dev/null || true
 	@$(BOOTJDK)/jar -cf $@ -C $(basename $@) .
 
-$(OUTPUTDIR)/lwjgl.jar: $(CLASSES) check_empty_classes
+# Build one merged LWJGL jar per version (3.3.3 and 3.4.1). The stock jars
+# from libs/lwjgl-<version> are merged with the Amethyst overlay classes in
+# build/lwjgl/ (src/lwjgl/**), plus the Caciocavallo audio provider and the
+# javax.sound META-INF service registration.
+$(OUTPUTDIR)/lwjgl-%.jar: $(CLASSES) check_empty_classes
 	@set -e
 	@echo "Creating $@"
-	@mkdir -p $(OUTPUTDIR)/lwjgl_lib
-	@cd $(OUTPUTDIR)/lwjgl_lib && find ../../libs/lwjgl -name 'lwjgl*.jar' -exec $(BOOTJDK)/jar -xf {} \; && rm -rf META-INF
-	@cd $(OUTPUTDIR)/lwjgl_lib && $(BOOTJDK)/jar -xf "../../../lwjgl.jar" && rm -rf META-INF
-	@cp -R $(OUTPUTDIR)/lwjgl/* $(OUTPUTDIR)/lwjgl_lib/
-	@mkdir -p $(OUTPUTDIR)/lwjgl_lib/com/apple/ios/audio
-	@cp -R $(OUTPUTDIR)/launcher/com/apple/ios/audio/*.class $(OUTPUTDIR)/lwjgl_lib/com/apple/ios/audio/
-	@mkdir -p $(OUTPUTDIR)/lwjgl_lib/META-INF/services
-	@cp $(SOURCEDIR)/launcher/META-INF/services/javax.sound.sampled.spi.MixerProvider $(OUTPUTDIR)/lwjgl_lib/META-INF/services/
-	@$(BOOTJDK)/jar -cf $@ -C $(OUTPUTDIR)/lwjgl_lib .
+	@mkdir -p $(OUTPUTDIR)/lwjgl_lib_$*
+	@cd $(OUTPUTDIR)/lwjgl_lib_$* && find ../../libs/lwjgl-$* -name 'lwjgl*.jar' -exec $(BOOTJDK)/jar -xf {} \; && rm -rf META-INF
+	@cp -R $(OUTPUTDIR)/lwjgl/* $(OUTPUTDIR)/lwjgl_lib_$*/
+	@mkdir -p $(OUTPUTDIR)/lwjgl_lib_$*/com/apple/ios/audio
+	@cp -R $(OUTPUTDIR)/launcher/com/apple/ios/audio/*.class $(OUTPUTDIR)/lwjgl_lib_$*/com/apple/ios/audio/
+	@mkdir -p $(OUTPUTDIR)/lwjgl_lib_$*/META-INF/services
+	@cp $(SOURCEDIR)/launcher/META-INF/services/javax.sound.sampled.spi.MixerProvider $(OUTPUTDIR)/lwjgl_lib_$*/META-INF/services/
+	@$(BOOTJDK)/jar -cf $@ -C $(OUTPUTDIR)/lwjgl_lib_$* .
+
+# Kept as a no-op placeholder: all: $(TARGETS) still lists lwjgl.jar because
+# src/lwjgl is a source directory. The runtime uses lwjgl-333.jar or
+# lwjgl-341.jar instead, and build/lwjgl.jar must NOT land in the app libs.
+$(OUTPUTDIR)/lwjgl.jar: $(OUTPUTDIR)/lwjgl-333.jar $(OUTPUTDIR)/lwjgl-341.jar
+	@echo "Skipping $@ (lwjgl-333.jar / lwjgl-341.jar are used instead)"
 
 $(OUTPUTDIR)/patchjna_agent.jar: $(CLASSES)
 	@set -e

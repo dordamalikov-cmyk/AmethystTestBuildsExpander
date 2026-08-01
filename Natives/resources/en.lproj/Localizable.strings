@@ -354,6 +354,7 @@
 "preference.profile.title.version_type" = "Version type";
 "preference.profile.title.default_touch_control" = "Touch controls";
 "preference.profile.title.default_gamepad_control" = "Gamepad controls";
+"preference.profile.title.lwjgl_version" = "LWJGL version";
 
 "profile.error.name_exists" = "A profile with that name already exists. Please use another name.";
 "profile.section.instance" = "Game Instance settings";
