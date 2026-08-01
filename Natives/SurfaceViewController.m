@@ -491,7 +491,117 @@ static GameSurfaceView* pojavWindow;
             windowWidth, windowHeight,
             minVersion
         );
+
+        // Debug: Dump view hierarchy after JVM launches (SDL may create views)
+        // Wait a bit for SDL to initialize
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self dumpViewHierarchyDebug];
+        });
     });
+}
+
+- (void)dumpViewHierarchyDebug {
+    NSLog(@"========== VIEW HIERARCHY DEBUG START ==========");
+    NSLog(@"[DEBUG] SurfaceViewController.view frame: %@", NSStringFromCGRect(self.view.frame));
+    NSLog(@"[DEBUG] SurfaceViewController.view.window: %@", self.view.window);
+    NSLog(@"[DEBUG] screenScale: %.2f, resolutionScale: %.2f", self.screenScale, resolutionScale);
+    NSLog(@"[DEBUG] windowWidth: %d, windowHeight: %d", windowWidth, windowHeight);
+    NSLog(@"[DEBUG] physicalWidth: %d, physicalHeight: %d", physicalWidth, physicalHeight);
+
+    NSLog(@"\n[DEBUG] === rootView ===");
+    NSLog(@"frame: %@", NSStringFromCGRect(self.rootView.frame));
+    NSLog(@"subviews count: %lu", (unsigned long)self.rootView.subviews.count);
+
+    NSLog(@"\n[DEBUG] === touchView ===");
+    NSLog(@"frame: %@", NSStringFromCGRect(self.touchView.frame));
+    NSLog(@"subviews count: %lu", (unsigned long)self.touchView.subviews.count);
+
+    NSLog(@"\n[DEBUG] === surfaceView (GameSurfaceView / CAMetalLayer) ===");
+    NSLog(@"frame: %@", NSStringFromCGRect(self.surfaceView.frame));
+    NSLog(@"layer.class: %@", NSStringFromClass([self.surfaceView.layer class]));
+    NSLog(@"layer.contentsScale: %.2f", self.surfaceView.layer.contentsScale);
+
+    NSLog(@"\n[DEBUG] === ctrlView (ControlLayout) ===");
+    NSLog(@"frame: %@", NSStringFromCGRect(self.ctrlView.frame));
+    NSLog(@"subviews count: %lu", (unsigned long)self.ctrlView.subviews.count);
+
+    // Dump full window hierarchy to find SDL views
+    NSLog(@"\n[DEBUG] === FULL WINDOW HIERARCHY ===");
+    [self dumpViewRecursive:self.view.window level:0 label:@"UIWindow"];
+
+    // Look for SDL-specific views
+    NSLog(@"\n[DEBUG] === SEARCHING FOR SDL VIEWS ===");
+    [self findSDLViewsIn:self.view.window];
+
+    NSLog(@"========== VIEW HIERARCHY DEBUG END ==========\n");
+}
+
+- (void)dumpViewRecursive:(UIView *)view level:(int)level label:(NSString *)label {
+    if (!view) return;
+
+    NSString *indent = [@"" stringByPaddingToLength:level * 2 withString:@" " startingAtIndex:0];
+    NSString *className = NSStringFromClass([view class]);
+    CGRect frame = view.frame;
+    CGFloat scale = (view.layer.contentsScale > 0) ? view.layer.contentsScale : 1.0;
+
+    BOOL isOurView = (view == self.view || view == self.rootView || view == self.touchView ||
+                      view == self.surfaceView || view == self.ctrlView);
+    NSString *marker = isOurView ? @" ← OUR VIEW" : @"";
+
+    NSLog(@"%@[%d] %@: %@ frame=%@ scale=%.2f subviews=%lu%@",
+          indent, level,
+          label.length > 0 ? label : className,
+          className,
+          NSStringFromCGRect(frame),
+          scale,
+          (unsigned long)view.subviews.count,
+          marker);
+
+    // Special handling for CALayer info
+    if ([view.layer isKindOfClass:[CAMetalLayer class]]) {
+        NSLog(@"%@   └─ CAMetalLayer detected!", indent);
+    }
+
+    for (int i = 0; i < view.subviews.count; i++) {
+        UIView *subview = view.subviews[i];
+        [self dumpViewRecursive:subview level:level + 1 label:[NSString stringWithFormat:@"subview[%d]", i]];
+    }
+}
+
+- (void)findSDLViewsIn:(UIView *)rootView {
+    [self searchSDLViewRecursive:rootView path:@""];
+}
+
+- (void)searchSDLViewRecursive:(UIView *)view path:(NSString *)path {
+    if (!view) return;
+
+    NSString *className = NSStringFromClass([view class]);
+    NSString *currentPath = path.length > 0 ? [NSString stringWithFormat:@"%@ > %@", path, className] : className;
+
+    // Check if this looks like an SDL view
+    if ([className containsString:@"SDL"] ||
+        [className containsString:@"sdl"] ||
+        [className hasPrefix:@"_"]) {  // Private UIKit classes often start with _
+
+        NSLog(@"[SDL CANDIDATE] %@", currentPath);
+        NSLog(@"  class: %@", className);
+        NSLog(@"  frame: %@", NSStringFromCGRect(view.frame));
+        NSLog(@"  superview: %@", NSStringFromClass([view.superview class]));
+        NSLog(@"  layer.class: %@", NSStringFromClass([view.layer class]));
+        NSLog(@"  layer.contentsScale: %.2f", view.layer.contentsScale);
+        NSLog(@"  contentScaleFactor: %.2f", view.contentScaleFactor);
+
+        // Check z-order relative to our ctrlView
+        if (view.superview == self.rootView) {
+            NSInteger sdlIndex = [self.rootView.subviews indexOfObject:view];
+            NSInteger ctrlIndex = [self.rootView.subviews indexOfObject:self.ctrlView];
+            NSLog(@"  Z-order: SDL at index %ld, ctrlView at index %ld (higher = on top)", (long)sdlIndex, (long)ctrlIndex);
+        }
+    }
+
+    for (UIView *subview in view.subviews) {
+        [self searchSDLViewRecursive:subview path:currentPath];
+    }
 }
 
 - (void)loadCustomControls {
