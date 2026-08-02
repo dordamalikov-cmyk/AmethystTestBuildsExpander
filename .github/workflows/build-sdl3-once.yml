@@ -48,14 +48,10 @@ jobs:
       - name: Find, inspect and package binary
         working-directory: sdl
         run: |
-          echo "/:: searching for SDL3.framework ::"
-          find build -name "SDL3.framework" -type d
-          echo "/:: full build products tree ::"
-          find build/Build/Products -maxdepth 3
-
-          FRAMEWORK_PATH=$(find build -name "SDL3.framework" -type d | head -1)
+          echo "/:: searching for SDL3.framework in Products ::"
+          FRAMEWORK_PATH=$(find build/Build/Products -name "SDL3.framework" -type d | head -1)
           if [ -z "$FRAMEWORK_PATH" ]; then
-            echo "ERROR: SDL3.framework not found!"
+            echo "ERROR: SDL3.framework not found in Products!"
             exit 1
           fi
           echo "/:: found :: $FRAMEWORK_PATH"
