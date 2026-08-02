@@ -23,28 +23,32 @@ jobs:
         run: |
           git apply ../amethyst/.github/patches/sdl-3.4.0-gl-loadlibrary.patch
 
-      - name: Build XCFramework for iOS (device, arm64)
+      - name: Build SDL3 dylib for iOS Device (arm64)
         working-directory: sdl
         run: |
           xcodebuild -project Xcode/SDL/SDL.xcodeproj \
-            -scheme "SDL3.xcframework" \
+            -scheme "Framework-iOS" \
             -configuration Release \
-            IPHONEOS_DEPLOYMENT_TARGET=14.0 \
+            -sdk iphoneos \
+            ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=NO \
+            IPHONEOS_DEPLOYMENT_TARGET=14.0 \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             clean build
 
-      - name: Zip Framework
+      - name: Extract dylib and zip
         working-directory: sdl
         run: |
-          FRAMEWORK_PATH=$(find . -name "SDL3.xcframework" -type d | head -1)
-          echo "Found framework at: $FRAMEWORK_PATH"
-          cd "$(dirname "$FRAMEWORK_PATH")"
-          zip -r SDL3.xcframework.zip "$(basename "$FRAMEWORK_PATH")"
-          echo "ZIP_DIR=sdl/$(dirname "$FRAMEWORK_PATH")" >> $GITHUB_ENV
+          FRAMEWORK_PATH=$(find . -path "*Release-iphoneos*" -name "SDL3.framework" -type d | head -1)
+          echo "Found: $FRAMEWORK_PATH"
+          BINARY="$FRAMEWORK_PATH/SDL3"
+          file "$BINARY"
+          lipo -info "$BINARY"
+          cp "$BINARY" ./libSDL3.dylib
+          zip libSDL3-ios-arm64.zip libSDL3.dylib
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SDL3-iOS-Framework
-          path: sdl/**/SDL3.xcframework.zip
+          name: SDL3-iOS-dylib
+          path: sdl/libSDL3-ios-arm64.zip
