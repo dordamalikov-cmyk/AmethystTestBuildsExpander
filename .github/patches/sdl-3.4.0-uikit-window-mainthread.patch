@@ -1,0 +1,185 @@
+diff --git a/src/video/uikit/SDL_uikitwindow.m b/src/video/uikit/SDL_uikitwindow.m
+--- a/src/video/uikit/SDL_uikitwindow.m
++++ b/src/video/uikit/SDL_uikitwindow.m
+@@ -126,8 +126,22 @@
+     return true;
+ }
+
++static bool UIKit_CreateWindow_Main(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID create_props);
++
+ bool UIKit_CreateWindow(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID create_props)
+ {
++    if (![NSThread isMainThread]) {
++        __block bool result = false;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = UIKit_CreateWindow_Main(_this, window, create_props);
++        });
++        return result;
++    }
++    return UIKit_CreateWindow_Main(_this, window, create_props);
++}
++
++static bool UIKit_CreateWindow_Main(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID create_props)
++{
+     @autoreleasepool {
+         SDL_VideoDisplay *display = SDL_GetVideoDisplayForWindow(window);
+         SDL_UIKitDisplayData *data = (__bridge SDL_UIKitDisplayData *)display->internal;
+@@ -232,8 +246,21 @@
+ #endif
+ }
+
++static void UIKit_ShowWindow_Main(SDL_VideoDevice *_this, SDL_Window *window);
++
+ void UIKit_ShowWindow(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            UIKit_ShowWindow_Main(_this, window);
++        });
++        return;
++    }
++    UIKit_ShowWindow_Main(_this, window);
++}
++
++static void UIKit_ShowWindow_Main(SDL_VideoDevice *_this, SDL_Window *window)
++{
+     @autoreleasepool {
+         SDL_UIKitWindowData *data = (__bridge SDL_UIKitWindowData *)window->internal;
+         [data.uiwindow makeKeyAndVisible];
+@@ -251,8 +278,21 @@
+     }
+ }
+
++static void UIKit_HideWindow_Main(SDL_VideoDevice *_this, SDL_Window *window);
++
+ void UIKit_HideWindow(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            UIKit_HideWindow_Main(_this, window);
++        });
++        return;
++    }
++    UIKit_HideWindow_Main(_this, window);
++}
++
++static void UIKit_HideWindow_Main(SDL_VideoDevice *_this, SDL_Window *window)
++{
+     @autoreleasepool {
+         SDL_UIKitWindowData *data = (__bridge SDL_UIKitWindowData *)window->internal;
+         data.uiwindow.hidden = YES;
+@@ -299,8 +339,21 @@
+     [viewcontroller.view layoutIfNeeded];
+ }
+
++static void UIKit_SetWindowBordered_Main(SDL_VideoDevice *_this, SDL_Window *window, bool bordered);
++
+ void UIKit_SetWindowBordered(SDL_VideoDevice *_this, SDL_Window *window, bool bordered)
+ {
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            UIKit_SetWindowBordered_Main(_this, window, bordered);
++        });
++        return;
++    }
++    UIKit_SetWindowBordered_Main(_this, window, bordered);
++}
++
++static void UIKit_SetWindowBordered_Main(SDL_VideoDevice *_this, SDL_Window *window, bool bordered)
++{
+     @autoreleasepool {
+         if (bordered) {
+             window->flags &= ~SDL_WINDOW_BORDERLESS;
+@@ -311,8 +364,22 @@
+     }
+ }
+
++static SDL_FullscreenResult UIKit_SetWindowFullscreen_Main(SDL_VideoDevice *_this, SDL_Window *window, SDL_VideoDisplay *display, SDL_FullscreenOp fullscreen);
++
+ SDL_FullscreenResult UIKit_SetWindowFullscreen(SDL_VideoDevice *_this, SDL_Window *window, SDL_VideoDisplay *display, SDL_FullscreenOp fullscreen)
+ {
++    if (![NSThread isMainThread]) {
++        __block SDL_FullscreenResult result = SDL_FULLSCREEN_FAILED;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = UIKit_SetWindowFullscreen_Main(_this, window, display, fullscreen);
++        });
++        return result;
++    }
++    return UIKit_SetWindowFullscreen_Main(_this, window, display, fullscreen);
++}
++
++static SDL_FullscreenResult UIKit_SetWindowFullscreen_Main(SDL_VideoDevice *_this, SDL_Window *window, SDL_VideoDisplay *display, SDL_FullscreenOp fullscreen)
++{
+     @autoreleasepool {
+         SDL_SendWindowEvent(window, fullscreen ? SDL_EVENT_WINDOW_ENTER_FULLSCREEN : SDL_EVENT_WINDOW_LEAVE_FULLSCREEN, 0, 0);
+         UIKit_UpdateWindowBorder(_this, window);
+@@ -320,8 +387,21 @@
+     return SDL_FULLSCREEN_SUCCEEDED;
+ }
+
++static void UIKit_UpdatePointerLock_Main(SDL_VideoDevice *_this, SDL_Window *window);
++
+ void UIKit_UpdatePointerLock(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            UIKit_UpdatePointerLock_Main(_this, window);
++        });
++        return;
++    }
++    UIKit_UpdatePointerLock_Main(_this, window);
++}
++
++static void UIKit_UpdatePointerLock_Main(SDL_VideoDevice *_this, SDL_Window *window)
++{
+ #ifndef SDL_PLATFORM_TVOS
+     @autoreleasepool {
+         SDL_UIKitWindowData *data = (__bridge SDL_UIKitWindowData *)window->internal;
+@@ -333,8 +413,21 @@
+ #endif // !SDL_PLATFORM_TVOS
+ }
+
++static void UIKit_DestroyWindow_Main(SDL_VideoDevice *_this, SDL_Window *window);
++
+ void UIKit_DestroyWindow(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            UIKit_DestroyWindow_Main(_this, window);
++        });
++        return;
++    }
++    UIKit_DestroyWindow_Main(_this, window);
++}
++
++static void UIKit_DestroyWindow_Main(SDL_VideoDevice *_this, SDL_Window *window)
++{
+     @autoreleasepool {
+         if (window->internal != NULL) {
+             SDL_UIKitWindowData *data = (__bridge SDL_UIKitWindowData *)window->internal;
+diff --git a/src/video/uikit/SDL_uikitmodes.m b/src/video/uikit/SDL_uikitmodes.m
+--- a/src/video/uikit/SDL_uikitmodes.m
++++ b/src/video/uikit/SDL_uikitmodes.m
+@@ -339,8 +339,22 @@
+     }
+ }
+ #endif
++static bool UIKit_InitModes_Main(SDL_VideoDevice *_this);
++
+ bool UIKit_InitModes(SDL_VideoDevice *_this)
+ {
++    if (![NSThread isMainThread]) {
++        __block bool result = false;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = UIKit_InitModes_Main(_this);
++        });
++        return result;
++    }
++    return UIKit_InitModes_Main(_this);
++}
++
++static bool UIKit_InitModes_Main(SDL_VideoDevice *_this)
++{
+     @autoreleasepool {
+ #ifdef SDL_PLATFORM_VISIONOS
+         UIKit_AddDisplay(false);
