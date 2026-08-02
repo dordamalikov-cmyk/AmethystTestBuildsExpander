@@ -18,3 +18,7 @@ typedef jint JLI_Launch_func(int argc, const char ** argv, /* main argc, argc */
 JLI_Launch_func *pJLI_Launch;
 
 int launchJVM(NSString *username, id launchTarget, int width, int height, int minVersion);
+
+// Loads the bundled libSDL3.dylib and calls SDL_SetMainReady() (see JavaLauncher.m).
+// Call on the main thread, before the JVM launches the game (which calls SDL_Init).
+void init_loadSDL3MainReady(void);

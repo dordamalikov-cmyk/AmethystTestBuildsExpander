@@ -610,6 +610,13 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 }
 
 - (void)launchMinecraft {
+    // SDL3 iOS builds gate SDL_Init on SDL_SetMainReady() (SDL_MAIN_NEEDED is
+    // always defined for iOS unless SDL_MAIN_HANDLED was set when the dylib was
+    // built). The game calls SDL_Init from inside the JVM, so prepare SDL on the
+    // main thread here — before the JVM boots — otherwise SDL_Init fails with
+    // "Application didn't initialize properly, did you include SDL_main.h...".
+    init_loadSDL3MainReady();
+
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         int minVersion = [self.metadata[@"javaVersion"][@"majorVersion"] intValue];
         if (minVersion == 0) {

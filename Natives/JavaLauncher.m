@@ -181,6 +181,34 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
     }
 }
 
+// SDL3 iOS builds (LWJGL 3.4.1, Minecraft 26.3+) gate SDL_Init on
+// SDL_SetMainReady(): SDL_build_config for iOS always defines SDL_MAIN_NEEDED
+// (see include/SDL3/SDL_main.h) unless SDL_MAIN_HANDLED was set when the dylib
+// was built, so SDL_MainIsReady starts false and SDL_Init fails with
+// "Application didn't initialize properly, did you include SDL_main.h...".
+// We are a normal UIKit app with our own main, so tell SDL the main is ready
+// before the JVM boots and the game calls SDL_Init. Loading libSDL3.dylib here
+// also pins the instance the game later dlopens (dyld dedups by path).
+// Must run on the main thread: SDL_SetMainReady also fixes SDL_MainThreadID,
+// which on iOS must be the UI thread (the JVM runs with -XstartOnFirstThread).
+static void init_loadSDL3MainReady(void) {
+    NSString *sdlPath = [NSBundle.mainBundle.privateFrameworksPath
+                         stringByAppendingPathComponent:@"libSDL3.dylib"];
+    void *sdl = dlopen(sdlPath.UTF8String, RTLD_NOW);
+    if (!sdl) {
+        NSLog(@"[SDL3] dlopen libSDL3.dylib failed: %s", dlerror());
+        return;
+    }
+    void (*setMainReady)(void) = (void (*)(void))dlsym(sdl, "SDL_SetMainReady");
+    if (setMainReady) {
+        setMainReady();
+        NSLog(@"[SDL3] SDL_SetMainReady() called before JVM launch");
+    } else {
+        NSLog(@"[SDL3] dlsym(SDL_SetMainReady) failed — SDL_Init may reject the "
+              "main-ready gate and fail before the GL backend load");
+    }
+}
+
 static BOOL RuntimeSupportsDebugJITMapping(NSString *javaHome) {
     NSString *marker = [javaHome
         stringByAppendingPathComponent:@".amethyst-mirror-mapping"];
