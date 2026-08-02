@@ -18,10 +18,11 @@ jobs:
         with:
           path: amethyst
 
-      - name: Apply Amethyst patch
+      - name: Apply Amethyst patches
         working-directory: sdl
         run: |
           git apply ../amethyst/.github/patches/sdl-3.4.0-gl-loadlibrary.patch
+          git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-screensaver-mainthread.patch
 
       - name: List available schemes and project structure
         working-directory: sdl

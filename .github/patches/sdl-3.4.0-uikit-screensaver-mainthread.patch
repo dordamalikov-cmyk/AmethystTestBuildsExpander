@@ -1,0 +1,33 @@
+diff --git a/src/video/uikit/SDL_uikitvideo.m b/src/video/uikit/SDL_uikitvideo.m
+--- a/src/video/uikit/SDL_uikitvideo.m
++++ b/src/video/uikit/SDL_uikitvideo.m
+@@ -179,6 +179,22 @@
+
+ bool UIKit_SuspendScreenSaver(SDL_VideoDevice *_this)
+ {
++    // UIKit requires the idle timer to be touched on the real main thread
++    // (assertBarrierOnQueue traps otherwise). SDL_Init/DisableScreenSaver can
++    // be called from a non-main thread in embedded scenarios (e.g. a JVM), so
++    // bounce to the main thread first.
++    if ([NSThread isMainThread]) {
++        return UIKit_SuspendScreenSaver_Main(_this);
++    }
++    __block bool result = false;
++    dispatch_sync(dispatch_get_main_queue(), ^{
++        result = UIKit_SuspendScreenSaver_Main(_this);
++    });
++    return result;
++}
++
++static bool UIKit_SuspendScreenSaver_Main(SDL_VideoDevice *_this)
++{
+     @autoreleasepool {
+         UIApplication *app = [UIApplication sharedApplication];
+
+         // Prevent the display from dimming and going to sleep.
+         app.idleTimerDisabled = (_this->suspend_screensaver != false);
+     }
+     return true;
+ }
+
+ bool UIKit_IsSystemVersionAtLeast(double version)
