@@ -23,6 +23,14 @@ jobs:
         run: |
           git apply ../amethyst/.github/patches/sdl-3.4.0-gl-loadlibrary.patch
 
+      - name: List available schemes
+        working-directory: sdl
+        run: |
+          echo "/:: available schemes ::"
+          xcodebuild -list -project Xcode/SDL/SDL.xcodeproj
+          echo "/:: project structure ::"
+          find Xcode -maxdepth 3 -type d
+
       - name: Build SDL3 dylib for iOS Device (arm64)
         working-directory: sdl
         run: |
