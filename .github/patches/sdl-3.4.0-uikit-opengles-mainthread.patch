@@ -1,0 +1,45 @@
+diff --git a/src/video/uikit/SDL_uikitopengles.m b/src/video/uikit/SDL_uikitopengles.m
+--- a/src/video/uikit/SDL_uikitopengles.m
++++ b/src/video/uikit/SDL_uikitopengles.m
+@@ -72,7 +72,17 @@
+         }
+ 
+         if (eaglcontext) {
+-            [eaglcontext.sdlView setSDLWindow:window];
++            /* setSDLWindow: manipulates the UIKit view hierarchy (rootViewController),
++             * which must happen on the main thread. The setCurrentContext: above must
++             * stay on the calling thread so the EAGL context remains current there for
++             * rendering. */
++            if (![NSThread isMainThread]) {
++                dispatch_sync(dispatch_get_main_queue(), ^{
++                    [eaglcontext.sdlView setSDLWindow:window];
++                });
++            } else {
++                [eaglcontext.sdlView setSDLWindow:window];
++            }
+         }
+     }
+ 
+@@ -108,8 +118,22 @@
+     return true;
+ }
+ 
++static SDL_GLContext UIKit_GL_CreateContext_Main(SDL_VideoDevice *_this, SDL_Window *window);
++
+ SDL_GLContext UIKit_GL_CreateContext(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    if (![NSThread isMainThread]) {
++        __block SDL_GLContext result = NULL;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = UIKit_GL_CreateContext_Main(_this, window);
++        });
++        return result;
++    }
++    return UIKit_GL_CreateContext_Main(_this, window);
++}
++
++static SDL_GLContext UIKit_GL_CreateContext_Main(SDL_VideoDevice *_this, SDL_Window *window)
++{
+     @autoreleasepool {
+         SDLEAGLContext *context = nil;
+         SDL_uikitopenglview *view;
