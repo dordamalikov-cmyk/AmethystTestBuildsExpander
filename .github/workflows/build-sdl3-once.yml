@@ -38,6 +38,7 @@ jobs:
             -scheme "SDL3" \
             -configuration Release \
             -sdk iphoneos \
+            -derivedDataPath build \
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=NO \
             IPHONEOS_DEPLOYMENT_TARGET=14.0 \
@@ -48,24 +49,24 @@ jobs:
         working-directory: sdl
         run: |
           echo "/:: searching for SDL3.framework ::"
-          find . -name "SDL3.framework" -type d
-          echo "/:: full build output tree ::"
-          find . -path "*Release-iphoneos*"
+          find build -name "SDL3.framework" -type d
+          echo "/:: full build products tree ::"
+          find build/Build/Products -maxdepth 3
 
-          FRAMEWORK_PATH=$(find . -path "*Release-iphoneos*" -name "SDL3.framework" -type d | head -1)
-          if [ -n "$FRAMEWORK_PATH" ]; then
-            echo "/:: inspection of found framework ::"
-            echo "/:: path :: $FRAMEWORK_PATH"
-            BINARY="$FRAMEWORK_PATH/SDL3"
-            if [ -f "$BINARY" ]; then
-              file "$BINARY"
-              lipo -info "$BINARY"
-            fi
+          FRAMEWORK_PATH=$(find build -name "SDL3.framework" -type d | head -1)
+          if [ -z "$FRAMEWORK_PATH" ]; then
+            echo "ERROR: SDL3.framework not found!"
+            exit 1
           fi
+          echo "/:: found :: $FRAMEWORK_PATH"
+          BINARY="$FRAMEWORK_PATH/SDL3"
+          file "$BINARY"
+          lipo -info "$BINARY"
+          cp "$BINARY" ./libSDL3.dylib
+          zip libSDL3-ios-arm64.zip libSDL3.dylib
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SDL3-iOS-raw-build
-          path: sdl/Xcode/SDL/**
-          if-no-files-found: warn
+          name: SDL3-iOS-dylib
+          path: sdl/libSDL3-ios-arm64.zip
