@@ -1,8 +1,12 @@
 diff --git a/src/video/uikit/SDL_uikitvideo.m b/src/video/uikit/SDL_uikitvideo.m
 --- a/src/video/uikit/SDL_uikitvideo.m
 +++ b/src/video/uikit/SDL_uikitvideo.m
-@@ -179,6 +179,22 @@
+@@ -177,8 +177,26 @@
+     UIKit_QuitModes(_this);
+ }
 
++static bool UIKit_SuspendScreenSaver_Main(SDL_VideoDevice *_this);
++
  bool UIKit_SuspendScreenSaver(SDL_VideoDevice *_this)
  {
 +    // UIKit requires the idle timer to be touched on the real main thread
