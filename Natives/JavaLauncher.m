@@ -191,7 +191,7 @@ void init_loadCustomJvmFlags(int* argc, const char** argv) {
 // also pins the instance the game later dlopens (dyld dedups by path).
 // Must run on the main thread: SDL_SetMainReady also fixes SDL_MainThreadID,
 // which on iOS must be the UI thread (the JVM runs with -XstartOnFirstThread).
-static void init_loadSDL3MainReady(void) {
+void init_loadSDL3MainReady(void) {
     NSString *sdlPath = [NSBundle.mainBundle.privateFrameworksPath
                          stringByAppendingPathComponent:@"libSDL3.dylib"];
     void *sdl = dlopen(sdlPath.UTF8String, RTLD_NOW);
