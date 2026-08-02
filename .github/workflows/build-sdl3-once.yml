@@ -37,11 +37,14 @@ jobs:
       - name: Zip Framework
         working-directory: sdl
         run: |
-          cd Xcode/SDL/Products
-          zip -r SDL3.xcframework.zip SDL3.xcframework
+          FRAMEWORK_PATH=$(find . -name "SDL3.xcframework" -type d | head -1)
+          echo "Found framework at: $FRAMEWORK_PATH"
+          cd "$(dirname "$FRAMEWORK_PATH")"
+          zip -r SDL3.xcframework.zip "$(basename "$FRAMEWORK_PATH")"
+          echo "ZIP_DIR=sdl/$(dirname "$FRAMEWORK_PATH")" >> $GITHUB_ENV
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SDL3-iOS-Framework
-          path: sdl/Xcode/SDL/Products/SDL3.xcframework.zip
+          path: sdl/**/SDL3.xcframework.zip
