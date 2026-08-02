@@ -1,7 +1,25 @@
 diff --git a/src/video/uikit/SDL_uikitopengles.m b/src/video/uikit/SDL_uikitopengles.m
 --- a/src/video/uikit/SDL_uikitopengles.m
 +++ b/src/video/uikit/SDL_uikitopengles.m
-@@ -72,7 +72,17 @@
+@@ -45,8 +45,15 @@
+ - (void)dealloc
+ {
+     /* When the context is deallocated, its view should be removed from any
+-     * SDL window that it's attached to. */
+-    [self.sdlView setSDLWindow:NULL];
++     * SDL window that it's attached to. setSDLWindow: re-assigns the window's
++     * rootViewController, which must happen on the main thread. */
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            [self.sdlView setSDLWindow:NULL];
++        });
++    } else {
++        [self.sdlView setSDLWindow:NULL];
++    }
+ }
+ 
+ @end
+@@ -72,7 +79,17 @@
          }
  
          if (eaglcontext) {
@@ -20,7 +38,7 @@ diff --git a/src/video/uikit/SDL_uikitopengles.m b/src/video/uikit/SDL_uikitopen
          }
      }
  
-@@ -108,8 +118,22 @@
+@@ -108,8 +125,22 @@
      return true;
  }
  
