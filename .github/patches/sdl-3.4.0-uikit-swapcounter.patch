@@ -1,0 +1,20 @@
+diff --git a/src/video/uikit/SDL_uikitopengles.m b/src/video/uikit/SDL_uikitopengles.m
+--- a/src/video/uikit/SDL_uikitopengles.m
++++ b/src/video/uikit/SDL_uikitopengles.m
+@@ -92,4 +92,16 @@
+ bool UIKit_GL_SwapWindow(SDL_VideoDevice *_this, SDL_Window *window)
+ {
++    /* [Amethyst diag] Count GL presents to prove the render loop runs. Logged
++     * through both the unified log (NSLog) and stderr so it lands in the same
++     * latestlog.txt as the app's view dump. First swap + every 120th keeps the
++     * volume low while separating "render alive (count grows)" from "render dead
++     * (never logs)". */
++    static unsigned long long sdlSwapCount = 0;
++    sdlSwapCount++;
++    if (sdlSwapCount <= 5 || (sdlSwapCount % 120) == 0) {
++        fprintf(stderr, "[SDL Swap] GL present #%llu\n", sdlSwapCount);
++        NSLog(@"[SDL Swap] GL present #%llu", sdlSwapCount);
++    }
++
+     @autoreleasepool {
+         SDLEAGLContext *context = (__bridge SDLEAGLContext *)SDL_GL_GetCurrentContext();

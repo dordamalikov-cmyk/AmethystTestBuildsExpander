@@ -26,6 +26,7 @@ jobs:
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-window-mainthread.patch
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-opengles-mainthread.patch
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-view-mainthread.patch
+          git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-swapcounter.patch
 
       - name: List available schemes and project structure
         working-directory: sdl
