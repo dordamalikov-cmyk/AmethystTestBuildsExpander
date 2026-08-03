@@ -1,0 +1,21 @@
+diff --git a/src/video/uikit/SDL_uikitview.m b/src/video/uikit/SDL_uikitview.m
+--- a/src/video/uikit/SDL_uikitview.m
++++ b/src/video/uikit/SDL_uikitview.m
+@@ -118,5 +118,17 @@
+ - (void)setSDLWindow:(SDL_Window *)window
+ {
++    /* setSDLWindow: re-assigns the window's rootViewController, which must
++     * happen on the main thread (assertBarrierOnQueue traps otherwise). It is
++     * reached from several renderer paths (GLES context, Metal view
++     * create/destroy, window teardown, ...) that can run on a non-main thread
++     * (e.g. a JVM), so centralize the guard here rather than at each call-site. */
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            [self setSDLWindow:window];
++        });
++        return;
++    }
++
+     SDL_UIKitWindowData *data = nil;
+
+     if (window == sdlwindow) {
