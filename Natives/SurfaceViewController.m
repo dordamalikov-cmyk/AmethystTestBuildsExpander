@@ -1,6 +1,8 @@
 #import <AVFoundation/AVFoundation.h>
 #import <GameController/GameController.h>
 #import <objc/runtime.h>
+#import <stdio.h>
+#import <stdarg.h>
 
 #import "authenticator/BaseAuthenticator.h"
 #import "customcontrols/ControlButton.h"
@@ -56,6 +58,19 @@ static SDL3_DelEventWatchFn g_sdlDelWatch = NULL;
 static __weak SurfaceViewController *g_sdlSurfaceVC = NULL;   // weak — auto-nils after dealloc
 static dispatch_source_t    g_sdlSafetyTimer = NULL;
 static BOOL                 g_sdlSurfaceSynced = NO;
+
+// Diagnostic: mirror a message to the unified log (NSLog) AND to the app's stderr,
+// which init_redirectStdio dup2's into latestlog.txt + the in-app log viewer. The
+// view-hierarchy / SDL-window dumps funnel through here so they land in the same
+// on-device log the launcher shows — no separate Console.app needed.
+static void SDLDiagLog(NSString *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    NSString *msg = [[NSString alloc] initWithFormat:fmt arguments:ap];
+    va_end(ap);
+    NSLog(@"%@", msg);
+    fprintf(stderr, "%s\n", msg.UTF8String);
+}
 
 @interface SurfaceViewController ()<UITextFieldDelegate, UIGestureRecognizerDelegate> {
 }
@@ -602,8 +617,10 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         dispatch_source_cancel(g_sdlSafetyTimer);
         g_sdlSafetyTimer = NULL;
     }
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ [self dumpViewHierarchyDebug]; });
+    // Diagnostic: dump on every SDL window event (and the 5s safety fallback), not
+    // just once per process — so a fresh launch after the crash-chain fix always
+    // captures the game's window the moment it exists.
+    [self dumpViewHierarchyDebug];
     [self updateSavedResolution];   // sync coordinates at true surface-ready time
     [self fixSDLViewZOrder];        // keep touch controls above the SDL view
     g_sdlSurfaceSynced = YES;
@@ -666,39 +683,86 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 }
 
 - (void)dumpViewHierarchyDebug {
-    NSLog(@"========== VIEW HIERARCHY DEBUG START ==========");
-    NSLog(@"[DEBUG] SurfaceViewController.view frame: %@", NSStringFromCGRect(self.view.frame));
-    NSLog(@"[DEBUG] SurfaceViewController.view.window: %@", self.view.window);
-    NSLog(@"[DEBUG] screenScale: %.2f, resolutionScale: %.2f", self.screenScale, resolutionScale);
-    NSLog(@"[DEBUG] windowWidth: %d, windowHeight: %d", windowWidth, windowHeight);
-    NSLog(@"[DEBUG] physicalWidth: %d, physicalHeight: %d", physicalWidth, physicalHeight);
+    SDLDiagLog(@"========== VIEW HIERARCHY DEBUG START ==========");
+    SDLDiagLog(@"[DEBUG] SurfaceViewController.view frame: %@", NSStringFromCGRect(self.view.frame));
+    SDLDiagLog(@"[DEBUG] SurfaceViewController.view.window: %@", self.view.window);
+    SDLDiagLog(@"[DEBUG] screenScale: %.2f, resolutionScale: %.2f", self.screenScale, resolutionScale);
+    SDLDiagLog(@"[DEBUG] windowWidth: %d, windowHeight: %d", windowWidth, windowHeight);
+    SDLDiagLog(@"[DEBUG] physicalWidth: %d, physicalHeight: %d", physicalWidth, physicalHeight);
 
-    NSLog(@"\n[DEBUG] === rootView ===");
-    NSLog(@"frame: %@", NSStringFromCGRect(self.rootView.frame));
-    NSLog(@"subviews count: %lu", (unsigned long)self.rootView.subviews.count);
+    SDLDiagLog(@"\n[DEBUG] === rootView ===");
+    SDLDiagLog(@"frame: %@  interactive:%d hidden:%d  subviews:%lu",
+               NSStringFromCGRect(self.rootView.frame),
+               self.rootView.userInteractionEnabled, self.rootView.hidden,
+               (unsigned long)self.rootView.subviews.count);
 
-    NSLog(@"\n[DEBUG] === touchView ===");
-    NSLog(@"frame: %@", NSStringFromCGRect(self.touchView.frame));
-    NSLog(@"subviews count: %lu", (unsigned long)self.touchView.subviews.count);
+    SDLDiagLog(@"\n[DEBUG] === touchView ===");
+    SDLDiagLog(@"frame: %@  interactive:%d hidden:%d  subviews:%lu",
+               NSStringFromCGRect(self.touchView.frame),
+               self.touchView.userInteractionEnabled, self.touchView.hidden,
+               (unsigned long)self.touchView.subviews.count);
 
-    NSLog(@"\n[DEBUG] === surfaceView (GameSurfaceView / CAMetalLayer) ===");
-    NSLog(@"frame: %@", NSStringFromCGRect(self.surfaceView.frame));
-    NSLog(@"layer.class: %@", NSStringFromClass([self.surfaceView.layer class]));
-    NSLog(@"layer.contentsScale: %.2f", self.surfaceView.layer.contentsScale);
+    SDLDiagLog(@"\n[DEBUG] === surfaceView (GameSurfaceView) ===");
+    SDLDiagLog(@"frame: %@ interactive:%d hidden:%d", NSStringFromCGRect(self.surfaceView.frame),
+               self.surfaceView.userInteractionEnabled, self.surfaceView.hidden);
+    SDLDiagLog(@"layer.class: %@", NSStringFromClass([self.surfaceView.layer class]));
+    SDLDiagLog(@"layer.contentsScale: %.2f  layer.opaque:%d", self.surfaceView.layer.contentsScale, self.surfaceView.layer.opaque);
 
-    NSLog(@"\n[DEBUG] === ctrlView (ControlLayout) ===");
-    NSLog(@"frame: %@", NSStringFromCGRect(self.ctrlView.frame));
-    NSLog(@"subviews count: %lu", (unsigned long)self.ctrlView.subviews.count);
+    SDLDiagLog(@"\n[DEBUG] === ctrlView (ControlLayout; hitTest: returns nil for bg) ===");
+    SDLDiagLog(@"frame: %@  interactive:%d hidden:%d  subviews:%lu",
+               NSStringFromCGRect(self.ctrlView.frame),
+               self.ctrlView.userInteractionEnabled, self.ctrlView.hidden,
+               (unsigned long)self.ctrlView.subviews.count);
 
-    // Dump full window hierarchy to find SDL views
-    NSLog(@"\n[DEBUG] === FULL WINDOW HIERARCHY ===");
-    [self dumpViewRecursive:self.view.window level:0 label:@"UIWindow"];
+    // ---- Window stack. SDL3 renders into ITS OWN UIWindow (data.uiwindow), separate
+    // from ours, so walking self.view.window can never see the SDL view. Enumerate ALL
+    // windows. UIApplication/UIWindowScene.windows are back-to-front: index 0 is the
+    // backmost window, the LAST index is the FRONTMOST = hit-tested first = the one that
+    // eats touches. The key touch-routing questions are answered per window below.
+    SDLDiagLog(@"\n[DEBUG] === WINDOW STACK (touch-routing diagnosis) ===");
+    NSMutableArray<UIWindow *> *allWindows = [NSMutableArray array];
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                [allWindows addObjectsFromArray:((UIWindowScene *)scene).windows];
+            }
+        }
+    } else {
+        [allWindows addObjectsFromArray:UIApplication.sharedApplication.windows];
+    }
 
-    // Look for SDL-specific views
-    NSLog(@"\n[DEBUG] === SEARCHING FOR SDL VIEWS ===");
-    [self findSDLViewsIn:self.view.window];
+    NSUInteger winCount = allWindows.count;
+    SDLDiagLog(@"[DEBUG] windows on screen: %lu (last index == FRONTMOST == hit-test priority)",
+               (unsigned long)winCount);
+    for (NSUInteger i = 0; i < winCount; i++) {
+        UIWindow *w = allWindows[i];
+        BOOL isFront = (i == winCount - 1);
+        SDLDiagLog(@"[DEBUG] --- WINDOW[%lu]%@%@ ---",
+                   (unsigned long)i,
+                   isFront ? @"  [FRONTMOST·hit-test-first]" : @"",
+                   w.isKeyWindow ? @"  [isKeyWindow]" : @"");
+        SDLDiagLog(@"  class: %@", NSStringFromClass(w.class));
+        SDLDiagLog(@"  frame: %@  bounds: %@", NSStringFromCGRect(w.frame), NSStringFromCGRect(w.bounds));
+        SDLDiagLog(@"  hidden: %d  alpha: %.3f  layer.opaque: %d",
+                   w.hidden, w.alpha, w.layer.opaque);
+        SDLDiagLog(@"  userInteractionEnabled: %d  isKeyWindow: %d  windowLevel: %.3f",
+                   w.userInteractionEnabled, w.isKeyWindow, w.windowLevel);
+        SDLDiagLog(@"  backgroundColor: %@", [w.backgroundColor description]);
+        UIViewController *rvc = w.rootViewController;
+        SDLDiagLog(@"  rootViewController: %@", rvc ? NSStringFromClass(rvc.class) : @"(nil)");
+        UIView *rv = rvc.view;  // may be nil before load
+        if (rv) {
+            SDLDiagLog(@"    rootView.class: %@  hidden:%d interactive:%d alpha:%.2f opaque:%d bg:%@",
+                       NSStringFromClass(rv.class), rv.hidden, rv.userInteractionEnabled,
+                       rv.alpha, rv.layer.opaque, [rv.backgroundColor description]);
+        }
+        SDLDiagLog(@"  [tree]");
+        [self dumpViewRecursive:w level:1 label:@"UIWindow"];
+        SDLDiagLog(@"  [SDL-search]");
+        [self findSDLViewsIn:w];
+    }
 
-    NSLog(@"========== VIEW HIERARCHY DEBUG END ==========\n");
+    SDLDiagLog(@"========== VIEW HIERARCHY DEBUG END ==========\n");
 }
 
 - (void)dumpViewRecursive:(UIView *)view level:(int)level label:(NSString *)label {
@@ -713,18 +777,19 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
                       view == self.surfaceView || view == self.ctrlView);
     NSString *marker = isOurView ? @" ← OUR VIEW" : @"";
 
-    NSLog(@"%@[%d] %@: %@ frame=%@ scale=%.2f subviews=%lu%@",
-          indent, level,
+    SDLDiagLog(@"%s[%d] %@: %@ frame=%@ scale=%.2f hidden=%d interact=%d alpha=%.2f opaque=%d subviews=%lu%@",
+          indent.UTF8String, level,
           label.length > 0 ? label : className,
           className,
           NSStringFromCGRect(frame),
           scale,
+          view.hidden, view.userInteractionEnabled, view.alpha, view.layer.opaque,
           (unsigned long)view.subviews.count,
           marker);
 
     // Special handling for CALayer info
     if ([view.layer isKindOfClass:[CAMetalLayer class]]) {
-        NSLog(@"%@   └─ CAMetalLayer detected!", indent);
+        SDLDiagLog(@"%@   └─ CAMetalLayer (Metal render path) detected!", indent);
     }
 
     for (int i = 0; i < view.subviews.count; i++) {
@@ -748,19 +813,22 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         [className containsString:@"sdl"] ||
         [className hasPrefix:@"_"]) {  // Private UIKit classes often start with _
 
-        NSLog(@"[SDL CANDIDATE] %@", currentPath);
-        NSLog(@"  class: %@", className);
-        NSLog(@"  frame: %@", NSStringFromCGRect(view.frame));
-        NSLog(@"  superview: %@", NSStringFromClass([view.superview class]));
-        NSLog(@"  layer.class: %@", NSStringFromClass([view.layer class]));
-        NSLog(@"  layer.contentsScale: %.2f", view.layer.contentsScale);
-        NSLog(@"  contentScaleFactor: %.2f", view.contentScaleFactor);
+        SDLDiagLog(@"[SDL CANDIDATE] %@", currentPath);
+        SDLDiagLog(@"  class: %@  superview: %@",
+                   className, NSStringFromClass([view.superview class]));
+        SDLDiagLog(@"  frame: %@  hidden: %d  interactive: %d  alpha: %.2f  opaque: %d",
+                   NSStringFromCGRect(view.frame), view.hidden,
+                   view.userInteractionEnabled, view.alpha, view.layer.opaque);
+        SDLDiagLog(@"  layer.class: %@  contentsScale: %.2f  bg: %@",
+                   NSStringFromClass([view.layer class]), view.layer.contentsScale,
+                   view.layer.backgroundColor ? @"has-bg" : @"clear");
+        SDLDiagLog(@"  contentScaleFactor: %.2f", view.contentScaleFactor);
 
-        // Check z-order relative to our ctrlView
+        // z-order within the app window (only meaningful if the SDL view is our child)
         if (view.superview == self.rootView) {
             NSInteger sdlIndex = [self.rootView.subviews indexOfObject:view];
             NSInteger ctrlIndex = [self.rootView.subviews indexOfObject:self.ctrlView];
-            NSLog(@"  Z-order: SDL at index %ld, ctrlView at index %ld (higher = on top)", (long)sdlIndex, (long)ctrlIndex);
+            SDLDiagLog(@"  Z-order: SDL at index %ld, ctrlView at index %ld (higher = on top)", (long)sdlIndex, (long)ctrlIndex);
         }
     }
 
