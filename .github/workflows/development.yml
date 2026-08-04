@@ -41,7 +41,6 @@ jobs:
           sudo mkdir -p /usr/local/bin
           # map the gmake binary symlink seamlessly across the target build runner paths
           sudo ln -sf /opt/homebrew/bin/gmake /usr/local/bin/gmake
-
       - name: Cache iOS JREs
         id: cache-jres
         uses: actions/cache@v5
@@ -54,7 +53,6 @@ jobs:
         run: |
           echo "SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)" >> $GITHUB_ENV
           echo "RUNNER=0" >> $GITHUB_ENV
-
       - name: Verify tools
         run: |
           gmake --version | head -1
@@ -63,52 +61,48 @@ jobs:
           wget --version | head -1
           xcrun --sdk iphoneos --show-sdk-version
           echo "SDKPATH=$SDKPATH"
-
       # Trigger gmake compilation pipelines with inline stderr filtering and execute post-build binary optimization
       - name: Build sideload IPA & TrollStore tIPA
         shell: bash
         run: |
           echo '#import <mach/mach.h>' | cat - Natives/JavaLauncher.m > temp && mv temp Natives/JavaLauncher.m
-
           JDK_BASE_PATH="${{ steps.setup-java.outputs.path }}"
           export PATH="$JDK_BASE_PATH/bin:/opt/homebrew/bin:$PATH"
           export JAVA_HOME="$JDK_BASE_PATH"
           export BOOTJDK="$JDK_BASE_PATH/bin"
           export SLIMMED=1
-
           export CODE_SIGNING_ALLOWED=NO
           export CODE_SIGNING_REQUIRED=NO
           export CODE_SIGN_IDENTITY=""
-
           export CFLAGS="-Wno-error=implicit-function-declaration $CFLAGS"
           export CXXFLAGS="-Wno-error=implicit-function-declaration $CXXFLAGS"
-
           SIGN_FLAGS="CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="
-
           # WARNING MITIGATION: Filter runtime stderr streams to suppress repetitive upstream vtool signature warnings
           gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=2 $SIGN_FLAGS 2> >(grep -v "vtool warning: code signature will be invalid" >&2)
-
           gmake -j$(sysctl -n hw.ncpu) dsym package PLATFORM=2 TROLLSTORE_JIT_ENT=1 $SIGN_FLAGS 2> >(grep -v "vtool warning: code signature will be invalid" >&2)
-
       - name: List artifacts
         if: always()
         run: ls -la artifacts/ || true
-
+        
       - name: Upload to External Storage
         if: success()
         run: |
-          echo "Bypassing GitHub Storage Quota.."
+          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to x0.at..(also bypassing filter)"
           if [ -d "artifacts" ]; then
             cd artifacts
+            i=1
             for file in *.ipa *.tipa; do
               if [ -f "$file" ]; then
-                echo "Uploading $file.."
-                UPLOAD_URL=$(curl --connect-timeout 20 --max-time 180 -s -F "file=@$file" https://x0.at || echo "Upload failed/timed out")
+                PDF_FILE="amethyst-build-${i}.pdf"
+                gzip -c "$file" > "$PDF_FILE"
+                echo "Uploading $PDF_FILE.."
+                UPLOAD_URL=$(curl --connect-timeout 20 --max-time 180 -s -F "file=@$PDF_FILE" https://x0.at || echo "Upload failed/timed out")
                 echo "Download link: $UPLOAD_URL"
+                rm -f "$PDF_FILE"
+                i=$((i+1))
               fi
             done
           fi
-
       # extract local compilation cmake diagnostic records upon unexpected pipeline failure
       - name: Upload build logs on failure
         if: failure()
