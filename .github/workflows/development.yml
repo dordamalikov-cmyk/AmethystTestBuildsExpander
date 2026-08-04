@@ -84,29 +84,26 @@ jobs:
         if: always()
         run: ls -la artifacts/ || true
         
-      - name: Upload to External Storage (storage.to)
+      - name: Upload to External Storage (transfer.adttemp.com.br)
         if: success()
         run: |
-          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to storage.to..."
+          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to transfer.adttemp.com.br..."
           if [ -d "artifacts" ]; then
             cd artifacts
             for file in *.ipa *.tipa; do
               if [ -f "$file" ]; then
-                echo "Uploading $file to storage.to..."
+                echo "Uploading $file to transfer.adttemp.com.br..."
                 
                 RESPONSE=$(curl --connect-timeout 30 --max-time 300 -s \
-                  -F "file=@$file" \
-                  -F "expiry=1d" \
-                  https://storage.to || echo "failed")
+                  --upload-file "$file" \
+                  "https://transfer.adttemp.com.br/$(basename "$file")" || echo "failed")
                 
                 if [ "$RESPONSE" = "failed" ] || [ -z "$RESPONSE" ]; then
                   echo "/:: error :: Upload timed out or server unavailable"
                 else
                   UPLOAD_URL=""
                   
-                  if echo "$RESPONSE" | jq -e . >/dev/null 2>&1; then
-                    UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.download_url // .url // .data.download_url // empty')
-                  elif echo "$RESPONSE" | grep -qE '^https?://'; then
+                  if echo "$RESPONSE" | grep -qE '^https?://'; then
                     UPLOAD_URL=$(echo "$RESPONSE" | tr -d '\r\n')
                   fi
                   
