@@ -1,0 +1,17 @@
+diff --git a/src/video/uikit/SDL_uikitvulkan.m b/src/video/uikit/SDL_uikitvulkan.m
+index 860b298..bd6b446 100644
+--- a/src/video/uikit/SDL_uikitvulkan.m
++++ b/src/video/uikit/SDL_uikitvulkan.m
+@@ -211,6 +211,12 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
+         return false;
+     }
+ 
++    /* [Amethyst diag] one-shot: Vulkan surface creation - confirms the SDL
++     * window exists and owns a CAMetalLayer at this instant (diagnostic for the
++     * black-screen composition issue). */
++    SDL_Log("[SDL Vulkan] UIKit_Vulkan_CreateSurface window='%s' flags=0x%x",
++            window->title, window->flags);
++
+     if (vkCreateMetalSurfaceEXT) {
+         VkMetalSurfaceCreateInfoEXT createInfo = {};
+         createInfo.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;

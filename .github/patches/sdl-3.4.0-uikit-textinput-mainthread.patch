@@ -1,0 +1,47 @@
+diff --git a/src/video/uikit/SDL_uikitviewcontroller.m b/src/video/uikit/SDL_uikitviewcontroller.m
+--- a/src/video/uikit/SDL_uikitviewcontroller.m
++++ b/src/video/uikit/SDL_uikitviewcontroller.m
+@@ -388,3 +388,14 @@
+ - (void)setTextFieldProperties:(SDL_PropertiesID) props
+ {
++    /* [Amethyst] Text-field hierarchy edits (re-add to view) and
++     * becomeFirstResponder must happen on the main thread (FBSScene
++     * updateClientSettingsWithBlock asserts off-main). SDL core calls
++     * SetTextInputProperties from the JVM thread, so bounce to main. */
++    if (![NSThread isMainThread]) {
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            [self setTextFieldProperties:props];
++        });
++        return;
++    }
++
+     textField.secureTextEntry = NO;
+@@ -494,3 +505,14 @@
+ - (bool)startTextInput
+ {
++    /* [Amethyst] becomeFirstResponder must run on the main thread (FBSScene
++     * updateClientSettingsWithBlock asserts otherwise). SDL core calls
++     * StartTextInput from the JVM thread. */
++    if (![NSThread isMainThread]) {
++        __block bool result;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = [self startTextInput];
++        });
++        return result;
++    }
++
+     if (!textFieldFocused) {
+@@ -518,3 +540,13 @@
+ - (bool)stopTextInput
+ {
++    /* [Amethyst] resignFirstResponder must run on the main thread, symmetric to
++     * startTextInput above. */
++    if (![NSThread isMainThread]) {
++        __block bool result;
++        dispatch_sync(dispatch_get_main_queue(), ^{
++            result = [self stopTextInput];
++        });
++        return result;
++    }
++
+     if (textFieldFocused) {
