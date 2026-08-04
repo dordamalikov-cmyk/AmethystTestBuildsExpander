@@ -28,6 +28,7 @@ jobs:
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-view-mainthread.patch
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-textinput-mainthread.patch
           git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-vulkan-diag.patch
+          git apply ../amethyst/.github/patches/sdl-3.4.0-uikit-vulkan-forceshow.patch
 
       - name: List available schemes and project structure
         working-directory: sdl

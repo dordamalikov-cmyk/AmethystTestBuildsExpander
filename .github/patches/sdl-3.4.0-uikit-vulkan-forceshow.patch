@@ -1,0 +1,23 @@
+diff --git a/src/video/uikit/SDL_uikitvulkan.m b/src/video/uikit/SDL_uikitvulkan.m
+index 860b298..995528b 100644
+--- a/src/video/uikit/SDL_uikitvulkan.m
++++ b/src/video/uikit/SDL_uikitvulkan.m
+@@ -237,6 +237,18 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
+         }
+     }
+
++    /* [Amethyst] The SDL window is created HIDDEN (SDL_WINDOW_HIDDEN is the SDL3
++     * create default) and is only shown when the game calls SDL_ShowWindow after
++     * presenting its first frame — which never happens when the first Metal
++     * submit is rejected (VK_ERROR_DEVICE_LOST "Insufficient Permission (to submit
++     * GPU work from background)") because the CAMetalLayer sits in a hidden window.
++     * The Vulkan surface is now created and its layer is attached to the window's
++     * view, so force-show the window: the layer moves into the visible hierarchy
++     * and Metal stops rejecting submissions. SDL_ShowWindow is a no-op if already
++     * shown and is safe from any thread (our uikit-window-mainthread patch bounces
++     * the driver's ShowWindow to the main queue). */
++    SDL_ShowWindow(window);
++
+     /* Unfortunately there's no SDL_Vulkan_DestroySurface function we can call
+      * Metal_DestroyView from. Right now the metal view's ref count is +2 (one
+      * from returning a new view object in CreateView, and one because it's
