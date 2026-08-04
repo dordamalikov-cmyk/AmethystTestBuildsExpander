@@ -645,15 +645,14 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
             windowWidth, windowHeight,
             minVersion
         );
+    });
 
-        // True event-based surface-ready signal: watch the game's SDL3 window
-        // events instead of guessing with a fixed 2-second delay. Fires exactly
-        // when the window is shown/resized — the moment the surface size is final
-        // and coordinate sync is safe. A 5s safety timer covers the case where no
-        // window event is ever delivered.
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self installSDLSurfaceWatch];
-        });
+    // [Amethyst diag] Register the SDL window-event watch in parallel with the
+    // JVM boot. launchJVM() blocks its thread until the JVM exits, so a dispatch
+    // after launchJVM would never run during gameplay — the event watch and the
+    // 5s safety timer must be live while the game's SDL window exists.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self installSDLSurfaceWatch];
     });
 }
 
