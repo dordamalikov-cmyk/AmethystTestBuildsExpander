@@ -84,25 +84,37 @@ jobs:
         if: always()
         run: ls -la artifacts/ || true
         
-      - name: Upload to External Storage
+      - name: Upload to External Storage (storage.to)
         if: success()
         run: |
-          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to x0.at..(also bypassing filter)"
+          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to storage.to..."
           if [ -d "artifacts" ]; then
             cd artifacts
-            i=1
             for file in *.ipa *.tipa; do
               if [ -f "$file" ]; then
-                PDF_FILE="amethyst-build-${i}.pdf"
-                gzip -c "$file" > "$PDF_FILE"
-                echo "Uploading $PDF_FILE.."
-                UPLOAD_URL=$(curl --connect-timeout 20 --max-time 180 -s -F "file=@$PDF_FILE" https://x0.at || echo "Upload failed/timed out")
-                echo "Download link: $UPLOAD_URL"
-                rm -f "$PDF_FILE"
-                i=$((i+1))
+                echo "Uploading $file to storage.to..."
+                
+                RESPONSE=$(curl --connect-timeout 30 --max-time 300 -s \
+                  -F "file=@$file" \
+                  -F "expiry=1d" \
+                  https://storage.to || echo "failed")
+                
+                if [ "$RESPONSE" = "failed" ] || [ -z "$RESPONSE" ]; then
+                  echo "/:: error :: Upload timed out or server unavailable"
+                else
+                  UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.download_url // empty')
+                  
+                  if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
+                    echo "/:: link :: Download link for $file: $UPLOAD_URL"
+                    echo "/:: notice :: This link is valid for 1 day only!"
+                  else
+                    echo "/:: error :: Server error | response: $RESPONSE"
+                  fi
+                fi
               fi
             done
           fi
+
       # extract local compilation cmake diagnostic records upon unexpected pipeline failure
       - name: Upload build logs on failure
         if: failure()
