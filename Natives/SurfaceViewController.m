@@ -626,6 +626,45 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     g_sdlSurfaceSynced = YES;
 }
 
+// [Amethyst diag] Compact window-stack snapshot for the repeating diagnostic timer:
+// answers (a) does the SDL window exist yet, (b) is it visible/key, (c) where is it
+// in the z-order vs the launcher window, (d) has a CAMetalLayer attached to its view.
+- (void)logSDLWindowStatus {
+    NSArray<UIWindow *> *windows = nil;
+    if (@available(iOS 13.0, *)) {
+        NSMutableArray *all = [NSMutableArray array];
+        for (UIScene *s in UIApplication.sharedApplication.connectedScenes) {
+            if ([s isKindOfClass:[UIWindowScene class]]) {
+                [all addObjectsFromArray:((UIWindowScene *)s).windows];
+            }
+        }
+        windows = all;
+    } else {
+        windows = UIApplication.sharedApplication.windows;
+    }
+    NSLog(@"[SDL Diag] windows on screen: %lu (last == frontmost)", (unsigned long)windows.count);
+    for (NSUInteger i = 0; i < windows.count; i++) {
+        UIWindow *w = windows[i];
+        Class sdlVC = NSClassFromString(@"SDL_uikitviewcontroller");
+        BOOL isSDL = (sdlVC && [w.rootViewController isKindOfClass:sdlVC]);
+        NSLog(@"[SDL Diag]   [%lu] %@ %@ rvc=%@ hidden=%d key=%d level=%.2f frame=%@",
+              (unsigned long)i,
+              isSDL ? @"<== SDL" : @"",
+              NSStringFromClass(w.class),
+              NSStringFromClass(w.rootViewController.class),
+              w.hidden, w.isKeyWindow, w.windowLevel,
+              NSStringFromCGRect(w.frame));
+        if (isSDL) {
+            for (UIView *v in w.rootViewController.view.subviews) {
+                NSLog(@"[SDL Diag]       subview %@ layer=%@ frame=%@",
+                      NSStringFromClass(v.class),
+                      NSStringFromClass(v.layer.class),
+                      NSStringFromCGRect(v.frame));
+            }
+        }
+    }
+}
+
 - (void)launchMinecraft {
     // SDL3 iOS builds gate SDL_Init on SDL_SetMainReady() (SDL_MAIN_NEEDED is
     // always defined for iOS unless SDL_MAIN_HANDLED was set when the dylib was
@@ -653,6 +692,29 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     // 5s safety timer must be live while the game's SDL window exists.
     dispatch_async(dispatch_get_main_queue(), ^{
         [self installSDLSurfaceWatch];
+    });
+
+    // [Amethyst diag] The 5s safety dump can fire before the game's SDL window is
+    // created (GL backend falls back to Vulkan, which can take tens of seconds), so
+    // re-log the window stack every 10s up to 60s. This catches the SDL window the
+    // moment it appears and shows whether it is visible and in front of the launcher.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_source_t diagTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
+                                                             dispatch_get_main_queue());
+        dispatch_source_set_timer(diagTimer,
+                                  dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10.0 * NSEC_PER_SEC)),
+                                  (int64_t)(10.0 * NSEC_PER_SEC), 0);
+        __weak SurfaceViewController *weakSelf = self;
+        __block int diagTicks = 0;
+        dispatch_source_set_event_handler(diagTimer, ^{
+            if (++diagTicks > 6) {  // 10s..60s, then stop
+                dispatch_source_cancel(diagTimer);
+                return;
+            }
+            NSLog(@"[SDL Diag] tick %d/6 — window stack", diagTicks);
+            [weakSelf logSDLWindowStatus];
+        });
+        dispatch_resume(diagTimer);
     });
 }
 
