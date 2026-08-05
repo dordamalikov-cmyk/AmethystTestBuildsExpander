@@ -121,6 +121,11 @@ void pojavSwapBuffers() {
 
 void pojavMakeCurrent(basic_render_window_t* window) {
     if (!br_make_current) return;
+    /* [Amethyst diag] Marker: did our bridge get asked to make the GL context
+     * current in MC 26.3+? If this never prints, SDL3 owns the context and the
+     * OSMesa-bridge diagnostic in osm_make_current will also not fire. */
+    fprintf(stderr, "[GLDiag] pojavMakeCurrent window=%p\n", (void*)window);
+    fflush(stderr);
     br_make_current(window);
 }
 

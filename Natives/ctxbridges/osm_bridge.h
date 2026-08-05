@@ -11,6 +11,7 @@ OSMesaContext  (*OSMesaCreateContext) (GLenum format, OSMesaContext sharelist);
     void (*OSMesaDestroyContext) (OSMesaContext ctx);
     void (*OSMesaPixelStore) ( GLint pname, GLint value );
     GLubyte* (*glGetString) (GLenum name);
+    GLenum (*glGetError) (void);
     void (*glFinish) (void);
     void (*glClearColor) (GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
     void (*glClear) (GLbitfield mask);

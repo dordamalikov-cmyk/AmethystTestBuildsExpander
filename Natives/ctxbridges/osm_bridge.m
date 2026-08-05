@@ -23,6 +23,7 @@ void dlsym_OSMesa() {
     handle.OSMesaDestroyContext = dlsym(dl_handle, "OSMesaDestroyContext");
     handle.OSMesaPixelStore = dlsym(dl_handle,"OSMesaPixelStore");
     handle.glGetString = dlsym(dl_handle,"glGetString");
+    handle.glGetError = dlsym(dl_handle,"glGetError");
     handle.glClearColor = dlsym(dl_handle, "glClearColor");
     handle.glClear = dlsym(dl_handle,"glClear");
     handle.glFinish = dlsym(dl_handle,"glFinish");
@@ -75,6 +76,25 @@ void osm_make_current(osm_render_window_t* bundle) {
     currentBundle = (basic_render_window_t *)bundle;
     currentBundle->osm.color_space = CGColorSpaceCreateDeviceRGB();
     osm_apply_current_ll();
+
+    /* [Amethyst diag] Drain + report OSMesa/Zink GL error state the moment the
+     * GL context becomes current, right before Minecraft's RenderPearl
+     * GlBackend.loadLibrary runs its own glGetError() == 0 check. fprintf goes
+     * to stderr, which the app redirects to its log; SDL_Log is not captured. */
+    if (handle.glGetError) {
+        GLenum err;
+        int n = 0;
+        fprintf(stderr, "[GLDiag] osm_make_current context=%p\n",
+                (void *)handle.OSMesaGetCurrentContext());
+        do {
+            err = handle.glGetError();
+            if (err != GL_NO_ERROR) {
+                fprintf(stderr, "[GLDiag] osm_make_current glGetError=0x%04x\n", err);
+            }
+            n++;
+        } while (err != GL_NO_ERROR && n < 8);
+        fflush(stderr);
+    }
 }
 
 void osm_swap_buffers() {
