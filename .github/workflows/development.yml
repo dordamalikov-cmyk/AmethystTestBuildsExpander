@@ -84,36 +84,59 @@ jobs:
         if: always()
         run: ls -la artifacts/ || true
         
-      - name: Upload to External Storage (transfer.adttemp.com.br)
+      - name: Upload to External Storage (GitHub Releases)
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Bypassing GitHub Storage Quota.. Uploading artifacts to transfer.adttemp.com.br..."
+          start_spinner() {
+            local msg="$1"
+            local spinner=" | / - \\"
+            tput civvis 2>/dev/null || true
+            
+            (
+              while true; do
+                for i in {1..4}; do
+                  printf "\r[%s] %s" "${spinner:$i:1}" "$msg"
+                  sleep 0.1
+                done
+              done
+            ) &
+            SPINNER_PID=$!
+          }
+
+          stop_spinner() {
+            if [ -n "$SPINNER_PID" ]; then
+              kill "$SPINNER_PID" 2>/dev/null || true
+              wait "$SPINNER_PID" 2>/dev/null || true
+              # Включаем курсор обратно и очищаем строку
+              tput cnorm 2>/dev/null || true
+              printf "\r"
+            fi
+          }
+
+          echo " Updating rolling 'nightly' release..."
+          
+          start_spinner "Creating/Updating release metadata..."
+          gh release create nightly \
+            --title "Nightly Build" \
+            --notes "Automated build at $(date +'%Y-%m-%d %H:%M')" \
+            --clobber >/dev/null 2>&1 || echo " |--> Release already exists, updating files..."
+          stop_spinner
+
           if [ -d "artifacts" ]; then
             cd artifacts
             for file in *.ipa *.tipa; do
               if [ -f "$file" ]; then
-                echo "Uploading $file to transfer.adttemp.com.br..."
+                start_spinner "Uploading $file to nightly release..."
+                gh release upload nightly "$file" --clobber >/dev/null 2>&1
+                stop_spinner
                 
-                RESPONSE=$(curl --connect-timeout 30 --max-time 300 -s \
-                  --upload-file "$file" \
-                  "https://transfer.adttemp.com.br/$(basename "$file")" || echo "failed")
-                
-                if [ "$RESPONSE" = "failed" ] || [ -z "$RESPONSE" ]; then
-                  echo "/:: error :: Upload timed out or server unavailable"
-                else
-                  UPLOAD_URL=""
-                  
-                  if echo "$RESPONSE" | grep -qE '^https?://'; then
-                    UPLOAD_URL=$(echo "$RESPONSE" | tr -d '\r\n')
-                  fi
-                  
-                  if [ -n "$UPLOAD_URL" ] && [ "$UPLOAD_URL" != "null" ]; then
-                    echo "/:: notice :: Download link for $file: $UPLOAD_URL"
-                    echo "/:: notice :: This link is valid for 1 day only!"
-                  else
-                    echo "/:: error :: Server error or unexpected response format | response: $RESPONSE"
-                  fi
-                fi
+                echo "✓ Uploaded $file successfully!"
+                UPLOAD_URL="https://github.com{{ github.repository }}/releases/download/nightly/$(basename "$file")"
+                echo " Direct download link for $file:"
+                echo "└─ $UPLOAD_URL"
+                echo "/:: notice :: Download link for $file / $UPLOAD_URL"
               fi
             done
           fi
