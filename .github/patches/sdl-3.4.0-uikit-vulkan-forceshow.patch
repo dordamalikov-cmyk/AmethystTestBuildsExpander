@@ -1,8 +1,8 @@
 diff --git a/src/video/uikit/SDL_uikitvulkan.m b/src/video/uikit/SDL_uikitvulkan.m
-index 860b298..995528b 100644
+index 85751b9..af4c356 100644
 --- a/src/video/uikit/SDL_uikitvulkan.m
 +++ b/src/video/uikit/SDL_uikitvulkan.m
-@@ -237,6 +237,18 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
+@@ -245,6 +245,22 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
          }
      }
 
@@ -17,6 +17,10 @@ index 860b298..995528b 100644
 +     * shown and is safe from any thread (our uikit-window-mainthread patch bounces
 +     * the driver's ShowWindow to the main queue). */
 +    SDL_ShowWindow(window);
++    /* [Amethyst diag] confirm the force-show ran (fprintf -> app log). */
++    fprintf(stderr, "[SDL ForceShow] window shown after Vulkan surface creation: '%s'\n",
++            window->title);
++    fflush(stderr);
 +
      /* Unfortunately there's no SDL_Vulkan_DestroySurface function we can call
       * Metal_DestroyView from. Right now the metal view's ref count is +2 (one
