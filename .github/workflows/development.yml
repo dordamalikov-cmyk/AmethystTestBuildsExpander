@@ -89,50 +89,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          start_spinner() {
-            local msg="$1"
-            local spinner=" | / - \\"
-            tput civvis 2>/dev/null || true
-            
-            (
-              while true; do
-                for i in {1..4}; do
-                  printf "\r[%s] %s" "${spinner:$i:1}" "$msg"
-                  sleep 0.1
-                done
-              done
-            ) &
-            SPINNER_PID=$!
-          }
-
-          stop_spinner() {
-            if [ -n "$SPINNER_PID" ]; then
-              kill "$SPINNER_PID" 2>/dev/null || true
-              wait "$SPINNER_PID" 2>/dev/null || true
-              # Включаем курсор обратно и очищаем строку
-              tput cnorm 2>/dev/null || true
-              printf "\r"
-            fi
-          }
-
-          echo " Updating rolling 'nightly' release..."
+          echo "Updating rolling 'nightly' release..."
           
-          start_spinner "Creating/Updating release metadata..."
           gh release create nightly \
             --title "Nightly Build" \
             --notes "Automated build at $(date +'%Y-%m-%d %H:%M')" \
-            --clobber >/dev/null 2>&1 || echo " |--> Release already exists, updating files..."
-          stop_spinner
+            --clobber || echo " |--> Release already exists, updating files..."
 
           if [ -d "artifacts" ]; then
             cd artifacts
             for file in *.ipa *.tipa; do
               if [ -f "$file" ]; then
-                start_spinner "Uploading $file to nightly release..."
-                gh release upload nightly "$file" --clobber >/dev/null 2>&1
-                stop_spinner
+                echo "Uploading $file to nightly release..."
                 
-                echo "✓ Uploaded $file successfully!"
+                gh release upload nightly "$file" --clobber
+                
+                echo "✔ Uploaded $file successfully!"
                 UPLOAD_URL="https://github.com{{ github.repository }}/releases/download/nightly/$(basename "$file")"
                 echo " Direct download link for $file:"
                 echo "└─ $UPLOAD_URL"
