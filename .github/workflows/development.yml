@@ -106,10 +106,10 @@ jobs:
                 gh release upload nightly "$file" --clobber
                 
                 echo "✔ Uploaded $file successfully!"
-                UPLOAD_URL="https://github.com{{ github.repository }}/releases/download/nightly/$(basename "$file")"
+                UPLOAD_URL="https://github.com/${{ github.repository }}/releases/download/nightly/$(basename "$file")"
                 echo " Direct download link for $file:"
                 echo "└─ $UPLOAD_URL"
-                echo "/:: notice :: Download link for $file / $UPLOAD_URL"
+                echo "/:: Download link for $file | $UPLOAD_URL"
               fi
             done
           fi
