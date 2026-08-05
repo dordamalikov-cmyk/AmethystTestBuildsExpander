@@ -93,8 +93,7 @@ jobs:
           
           gh release create nightly \
             --title "Nightly Build" \
-            --notes "Automated build at $(date +'%Y-%m-%d %H:%M')" \
-            --clobber || echo " |--> Release already exists, updating files..."
+            --notes "Automated build at $(date +'%Y-%m-%d %H:%M')" || true
 
           if [ -d "artifacts" ]; then
             cd artifacts
