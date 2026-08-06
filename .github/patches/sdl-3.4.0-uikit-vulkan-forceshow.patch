@@ -2,7 +2,7 @@ diff --git a/src/video/uikit/SDL_uikitvulkan.m b/src/video/uikit/SDL_uikitvulkan
 index 85751b9..af4c356 100644
 --- a/src/video/uikit/SDL_uikitvulkan.m
 +++ b/src/video/uikit/SDL_uikitvulkan.m
-@@ -245,6 +245,22 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
+@@ -245,6 +245,41 @@ bool UIKit_Vulkan_CreateSurface(SDL_VideoDevice *_this,
          }
      }
 
@@ -20,6 +20,25 @@ index 85751b9..af4c356 100644
 +    /* [Amethyst diag] confirm the force-show ran (fprintf -> app log). */
 +    fprintf(stderr, "[SDL ForceShow] window shown after Vulkan surface creation: '%s'\n",
 +            window->title);
++    fflush(stderr);
++
++    /* [Amethyst] Keep the screen awake for the render session. SDL3's
++     * UIKit_SuspendScreenSaver writes app.idleTimerDisabled =
++     * (suspend_screensaver != false) during SDL_Init, which can clobber the app's
++     * own idleTimerDisabled=YES back to NO; with the idle timer armed the screen
++     * auto-locks ~30-60s into the black pre-first-frame gap, the app backgrounds,
++     * and MoltenVK rejects the first vkQueueSubmit with
++     * kIOGPUCommandBufferCallbackErrorBackgroundExecutionNotPermitted
++     * (VK_ERROR_DEVICE_LOST). Disable the screensaver now, after the window is up;
++     * setting SDL's suspend_screensaver flag keeps idleTimerDisabled=YES even if
++     * the hook runs again later. */
++    UIApplication *uiApp = [UIApplication sharedApplication];
++    fprintf(stderr, "[SDL ForceShow] before: isIdleTimerDisabled=%d applicationState=%ld\n",
++            uiApp.isIdleTimerDisabled, (long)uiApp.applicationState);
++    fflush(stderr);
++    SDL_DisableScreenSaver();
++    fprintf(stderr, "[SDL ForceShow] after: isIdleTimerDisabled=%d\n",
++            uiApp.isIdleTimerDisabled);
 +    fflush(stderr);
 +
      /* Unfortunately there's no SDL_Vulkan_DestroySurface function we can call
