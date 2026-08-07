@@ -14,8 +14,10 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <libgen.h>
-#include <stdlib.h>
 #include <stdatomic.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "jni.h"
 #include "glfw_keycodes.h"
@@ -472,7 +474,15 @@ void CallbackBridge_nativeSetInputReady(BOOL inputReady) {
     }
 }
 
+// SDL key/text injection (defined below, near CallbackBridge_nativeSendKey).
+static void sdlInjectKey(int key, int action, int mods);
+static void sdlInjectChar(jchar codepoint);
+
 BOOL CallbackBridge_nativeSendChar(jchar codepoint /* jint codepoint */) {
+    if (g_sdlInputActive) {
+        sdlInjectChar(codepoint);
+        return YES;
+    }
     if (GLFW_invoke_Char && isInputReady) {
         if (isUseStackQueueCall) {
             sendData(EVENT_TYPE_CHAR, codepoint, 0, 0, 0);
@@ -487,8 +497,13 @@ BOOL CallbackBridge_nativeSendChar(jchar codepoint /* jint codepoint */) {
 
 BOOL CallbackBridge_nativeSendCharMods(jchar codepoint, int mods) {
     // NSLog(@"[KeyboardDebug] Bridge: Got character code=%d, modifiers=%d", codepoint, mods);
-    // NSLog(@"[KeyboardDebug] Bridge: Game status: GLFW_invoke_CharMods=%p, GLFW_invoke_Char=%p, isInputReady=%d", 
+    // NSLog(@"[KeyboardDebug] Bridge: Game status: GLFW_invoke_CharMods=%p, GLFW_invoke_Char=%p, isInputReady=%d",
     //      GLFW_invoke_CharMods, GLFW_invoke_Char, isInputReady);
+
+    if (g_sdlInputActive) {
+        sdlInjectChar(codepoint);   // chars only; mods already tracked per-key
+        return YES;
+    }
 
     if ((GLFW_invoke_CharMods || GLFW_invoke_Char) && isInputReady) {
         if (isUseStackQueueCall) {
@@ -579,7 +594,200 @@ char getKeyModifiers(int key, int action) {
     return currMods;
 }
 
+// ============================================================================
+// SDL3 key/text injection (MC 26.3+, LWJGL 3.4.1 / org.lwjgl.sdl).
+//
+// MC 26.3 reads input from SDL events; the GLFW CallbackBridge path
+// (GLFW_invoke_*) is dead for it. g_sdlInputActive (set by SurfaceViewController
+// once the SDL window appears) routes keys/characters to SDL here.
+//
+// The internal SDL_SendKeyboardKey/SDL_SendKeyboardText symbols are NOT exported
+// from the bundled libSDL3.dylib, so we inject through the public SDL_PushEvent:
+// SDL_Event is a 128-byte union that SDL_PushEvent copies, so we hand it a
+// full-size zeroed mirror and populate only the fields we need. For text events
+// SDL duplicates the string on push (see SDL_SendKeyboardText's own strdup/push/
+// free pattern), so the caller frees its copy right after the call.
+// ============================================================================
+
+typedef int      (*SDL3_PushEventFn)(void *event);                       // int SDL_PushEvent(SDL_Event *)
+typedef uint32_t (*SDL3_GetKeyFromScancodeFn)(int scancode);            // SDL_Keycode SDL_GetKeyFromScancode(SDL_Scancode)
+
+enum {
+    SDL3_EVENT_KEY_DOWN   = 0x300,
+    SDL3_EVENT_KEY_UP     = 0x301,
+    SDL3_EVENT_TEXT_INPUT = 0x303,
+};
+
+// Mirrors SDL_KeyboardEvent (SDL_events.h, SDL 3.4.0) — field order matters.
+typedef struct SDL3_KeyboardEvent {
+    uint32_t type;      // SDL_EVENT_KEY_DOWN / SDL_EVENT_KEY_UP
+    uint32_t reserved;
+    uint64_t timestamp; // 0 -> SDL fills
+    uint32_t which;     // SDL_KeyboardID (0 = global)
+    uint32_t mod;       // SDL_Keymod
+    uint32_t key;       // SDL_Keycode
+    int      scancode;  // SDL_Scancode
+    bool     down;
+    bool     repeat;
+    uint32_t raw;
+} SDL3_KeyboardEvent;
+
+// Mirrors SDL_TextInputEvent (SDL_events.h, SDL 3.4.0).
+typedef struct SDL3_TextInputEvent {
+    uint32_t type;
+    uint32_t reserved;
+    uint64_t timestamp;
+    uint32_t windowID;
+    char    *text;      // UTF-8, duplicated by SDL on push
+} SDL3_TextInputEvent;
+
+// SDL_Event is 128 bytes on 64-bit; SDL_PushEvent copies that much out of the
+// pointer we give it, so the buffer must be full-size (never a bare struct).
+typedef union SDL3_EventMirror {
+    char                buf[128];
+    SDL3_KeyboardEvent  key;
+    SDL3_TextInputEvent text;
+} SDL3_EventMirror;
+
+static void                    *g_sdlKeyLib = NULL;
+static SDL3_PushEventFn         g_sdlKeyPushEvent = NULL;
+static SDL3_GetKeyFromScancodeFn g_sdlKeyGetFromScancode = NULL;
+
+static void sdlKeyLoad(void) {
+    if (g_sdlKeyPushEvent) return;
+    NSString *path = [NSBundle.mainBundle.privateFrameworksPath
+                      stringByAppendingPathComponent:@"libSDL3.dylib"];
+    g_sdlKeyLib = dlopen(path.UTF8String, RTLD_NOW | RTLD_GLOBAL);
+    if (!g_sdlKeyLib) {
+        fprintf(stderr, "[SDLKey] dlopen %s failed: %s\n", path.UTF8String, dlerror());
+        fflush(stderr);
+        return;
+    }
+    g_sdlKeyPushEvent = (SDL3_PushEventFn)dlsym(g_sdlKeyLib, "SDL_PushEvent");
+    g_sdlKeyGetFromScancode = (SDL3_GetKeyFromScancodeFn)dlsym(g_sdlKeyLib, "SDL_GetKeyFromScancode");
+    if (!g_sdlKeyPushEvent) {
+        fprintf(stderr, "[SDLKey] dlsym(SDL_PushEvent) failed\n");
+    }
+    fflush(stderr);
+}
+
+// GLFW key -> SDL3 scancode (SDL3 scancodes == USB HID usage ids). -1 = unknown.
+static int sdlGlfwToScancode(int key) {
+    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) return 4 + (key - GLFW_KEY_A);          // 65-90 -> 4-29
+    if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {                                       // 48-57 -> 39,30..38
+        static const int sdig[10] = {39,30,31,32,33,34,35,36,37,38};
+        return sdig[key - GLFW_KEY_0];
+    }
+    if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F12) return 58 + (key - GLFW_KEY_F1);     // 290-301 -> 58-69
+    switch (key) {
+        case GLFW_KEY_SPACE:        return 44;   // SDL_SCANCODE_SPACE
+        case GLFW_KEY_APOSTROPHE:   return 52;   // SDL_SCANCODE_APOSTROPHE
+        case GLFW_KEY_COMMA:        return 54;   // SDL_SCANCODE_COMMA
+        case GLFW_KEY_MINUS:        return 45;   // SDL_SCANCODE_MINUS
+        case GLFW_KEY_PERIOD:       return 55;   // SDL_SCANCODE_PERIOD
+        case GLFW_KEY_SLASH:        return 56;   // SDL_SCANCODE_SLASH
+        case GLFW_KEY_SEMICOLON:    return 51;   // SDL_SCANCODE_SEMICOLON
+        case GLFW_KEY_EQUAL:        return 46;   // SDL_SCANCODE_EQUALS
+        case GLFW_KEY_LEFT_BRACKET: return 47;   // SDL_SCANCODE_LEFTBRACKET
+        case GLFW_KEY_BACKSLASH:    return 49;   // SDL_SCANCODE_BACKSLASH
+        case GLFW_KEY_RIGHT_BRACKET:return 48;   // SDL_SCANCODE_RIGHTBRACKET
+        case GLFW_KEY_GRAVE_ACCENT: return 53;   // SDL_SCANCODE_GRAVE
+        case GLFW_KEY_ESCAPE:       return 41;   // SDL_SCANCODE_ESCAPE
+        case GLFW_KEY_ENTER:        return 40;   // SDL_SCANCODE_RETURN
+        case GLFW_KEY_TAB:          return 43;   // SDL_SCANCODE_TAB
+        case GLFW_KEY_BACKSPACE:    return 42;   // SDL_SCANCODE_BACKSPACE
+        case GLFW_KEY_INSERT:       return 73;   // SDL_SCANCODE_INSERT
+        case GLFW_KEY_DELETE:       return 76;   // SDL_SCANCODE_DELETE
+        case GLFW_KEY_HOME:         return 74;   // SDL_SCANCODE_HOME
+        case GLFW_KEY_END:          return 77;   // SDL_SCANCODE_END
+        case GLFW_KEY_PAGE_UP:      return 75;   // SDL_SCANCODE_PAGEUP
+        case GLFW_KEY_PAGE_DOWN:    return 78;   // SDL_SCANCODE_PAGEDOWN
+        case GLFW_KEY_DPAD_UP:      return 82;   // SDL_SCANCODE_UP
+        case GLFW_KEY_DPAD_DOWN:    return 81;   // SDL_SCANCODE_DOWN
+        case GLFW_KEY_DPAD_LEFT:    return 80;   // SDL_SCANCODE_LEFT
+        case GLFW_KEY_DPAD_RIGHT:   return 79;   // SDL_SCANCODE_RIGHT
+        case GLFW_KEY_CAPS_LOCK:    return 57;   // SDL_SCANCODE_CAPSLOCK
+        case GLFW_KEY_SCROLL_LOCK:  return 71;   // SDL_SCANCODE_SCROLLLOCK
+        case GLFW_KEY_NUM_LOCK:     return 83;   // SDL_SCANCODE_NUMLOCKCLEAR
+        case GLFW_KEY_LEFT_SHIFT:   return 225;  // SDL_SCANCODE_LSHIFT
+        case GLFW_KEY_LEFT_CONTROL: return 224;  // SDL_SCANCODE_LCTRL
+        case GLFW_KEY_LEFT_ALT:     return 226;  // SDL_SCANCODE_LALT
+        case GLFW_KEY_LEFT_SUPER:   return 227;  // SDL_SCANCODE_LGUI
+        case GLFW_KEY_RIGHT_SHIFT:  return 229;  // SDL_SCANCODE_RSHIFT
+        case GLFW_KEY_RIGHT_CONTROL:return 228;  // SDL_SCANCODE_RCTRL
+        case GLFW_KEY_RIGHT_ALT:    return 230;  // SDL_SCANCODE_RALT
+        case GLFW_KEY_RIGHT_SUPER:  return 231;  // SDL_SCANCODE_RGUI
+        default: return -1;
+    }
+}
+
+// GLFW mods -> SDL_Keymod (SDL3: KMOD_SHIFT=0x0003, KMOD_CTRL=0x00C0, KMOD_ALT=0x0300,
+// KMOD_GUI=0x0C00, KMOD_CAPS=0x2000, KMOD_NUM=0x4000).
+static uint32_t sdlModsFromGLFW(int mods) {
+    uint32_t m = 0;
+    if (mods & GLFW_MOD_SHIFT)    m |= 0x0003;
+    if (mods & GLFW_MOD_CONTROL)  m |= 0x00C0;
+    if (mods & GLFW_MOD_ALT)      m |= 0x0300;
+    if (mods & GLFW_MOD_SUPER)    m |= 0x0C00;
+    if (mods & GLFW_MOD_CAPS_LOCK)m |= 0x2000;
+    if (mods & GLFW_MOD_NUM_LOCK) m |= 0x4000;
+    return m;
+}
+
+static void sdlInjectKey(int key, int action, int mods) {
+    if (!g_sdlKeyPushEvent) sdlKeyLoad();
+    if (!g_sdlKeyPushEvent) return;
+    int sc = sdlGlfwToScancode(key);
+    if (sc < 0) {
+        fprintf(stderr, "[SDLKey] unmapped GLFW key %d\n", key);
+        fflush(stderr);
+        return;
+    }
+    SDL3_EventMirror ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.key.type      = (action != 0) ? SDL3_EVENT_KEY_DOWN : SDL3_EVENT_KEY_UP;
+    ev.key.which     = 0;                                   // SDL_GLOBAL_KEYBOARD_ID
+    ev.key.mod       = sdlModsFromGLFW(mods);
+    ev.key.key       = g_sdlKeyGetFromScancode ? g_sdlKeyGetFromScancode(sc) : 0;
+    ev.key.scancode  = sc;
+    ev.key.down      = (action != 0);
+    ev.key.repeat    = false;
+    g_sdlKeyPushEvent(&ev);
+}
+
+static void sdlInjectChar(jchar codepoint) {
+    if (!g_sdlKeyPushEvent) sdlKeyLoad();
+    if (!g_sdlKeyPushEvent) return;
+    unsigned int c = (unsigned int)codepoint;
+    char utf8[4];
+    size_t n = 0;
+    if (c < 0x80) {
+        utf8[n++] = (char)c;
+    } else if (c < 0x800) {
+        utf8[n++] = (char)(0xC0 | (c >> 6));
+        utf8[n++] = (char)(0x80 | (c & 0x3F));
+    } else {
+        utf8[n++] = (char)(0xE0 | (c >> 12));
+        utf8[n++] = (char)(0x80 | ((c >> 6) & 0x3F));
+        utf8[n++] = (char)(0x80 | (c & 0x3F));
+    }
+    utf8[n] = '\0';
+    char *copy = malloc(n + 1);       // SDL duplicates text on push, so we free ours
+    memcpy(copy, utf8, n + 1);
+    SDL3_EventMirror ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.text.type     = SDL3_EVENT_TEXT_INPUT;
+    ev.text.windowID = 0;
+    ev.text.text     = copy;
+    g_sdlKeyPushEvent(&ev);
+    free(copy);
+}
+
 void CallbackBridge_nativeSendKey(int key, int scancode, int action, int mods) {
+    if (g_sdlInputActive) {
+        sdlInjectKey(key, action, mods);   // action: 1 = down, 0 = up
+        return;                            // SDL mode: no GLFW shim, no Cmd emulation
+    }
     if (GLFW_invoke_Key && isInputReady) {
         keyDownBuffer[MAX(0, key-31)]=(jbyte)action;
         if (mods == 0) {

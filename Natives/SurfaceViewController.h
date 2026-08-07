@@ -8,6 +8,8 @@
 BOOL canAppendToLog;
 dispatch_group_t fatalExitGroup;
 
+extern BOOL g_sdlInputActive;   // set when the SDL window is up; read by input_bridge_v3.m
+
 CGRect virtualMouseFrame;
 CGPoint lastVirtualMousePoint;
 

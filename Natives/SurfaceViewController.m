@@ -34,6 +34,9 @@ int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *bu
 static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
 
+// extern in SurfaceViewController.h; read by input_bridge_v3.m to route keys to SDL.
+BOOL g_sdlInputActive = NO;
+
 // ---- SDL3 ABI mirror for the native surface-ready event watch (SDL_events.h, 3.4.0) ----
 // org.lwjgl.sdl.SDL is a stub, so window events are captured natively from the bundled
 // libSDL3.dylib that the game loads. SDL_Event.type is the first 32-bit field of the struct.
@@ -623,6 +626,7 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     [self dumpViewHierarchyDebug];
     [self updateSavedResolution];   // sync coordinates at true surface-ready time
     [self fixSDLViewZOrder];        // keep touch controls above the SDL view
+    [self configureSDLWindowLevel]; // Approach B: drop the SDL window below the launcher
     g_sdlSurfaceSynced = YES;
 }
 
@@ -663,6 +667,58 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
             }
         }
     }
+}
+
+// [Amethyst] Find the separate window SDL3 created for the game (rootVC is
+// SDL_uikitviewcontroller). Returns nil for old MC builds that render into our
+// own views (no SDL window) — those stay in the GLFW path.
+- (UIWindow *)findSDLWindow {
+    NSArray<UIWindow *> *windows = nil;
+    if (@available(iOS 13.0, *)) {
+        NSMutableArray *all = [NSMutableArray array];
+        for (UIScene *s in UIApplication.sharedApplication.connectedScenes) {
+            if ([s isKindOfClass:[UIWindowScene class]]) {
+                [all addObjectsFromArray:((UIWindowScene *)s).windows];
+            }
+        }
+        windows = all;
+    } else {
+        windows = UIApplication.sharedApplication.windows;
+    }
+    Class sdlVC = NSClassFromString(@"SDL_uikitviewcontroller");
+    for (UIWindow *w in windows) {
+        if (sdlVC && [w.rootViewController isKindOfClass:sdlVC]) {
+            return w;
+        }
+    }
+    return nil;
+}
+
+// [Amethyst] Approach B (window level): keep the SDL/Minecraft window BELOW the
+// launcher window so on-screen controls (ctrlView) stay above it and tappable.
+// Idempotent — safe to run on every SDL window event / rotation.
+- (void)configureSDLWindowLevel {
+    UIWindow *sdlWin = [self findSDLWindow];
+    if (!sdlWin) return;                        // no SDL window (old MC) -> no-op
+
+    if (sdlWin.windowLevel >= UIWindowLevelNormal) {
+        sdlWin.windowLevel = UIWindowLevelNormal - 1;   // SDL window BELOW ours
+    }
+    UIWindow *appWin = self.view.window;
+    appWin.windowLevel = UIWindowLevelNormal;           // ours: Normal (belt & braces)
+    appWin.backgroundColor = [UIColor clearColor];      // window is transparent; avoid a solid layer
+    self.view.backgroundColor = [UIColor clearColor];
+    self.rootView.backgroundColor = [UIColor clearColor];
+    self.touchView.backgroundColor = [UIColor clearColor];  // remove the black backdrop so the
+                                                            // SDL window (below) shows through
+    // Stage 1: touchView no longer takes touches, so empty-zone touches can fall
+    // through. rootView/ctrlView stay interactive (controls must keep working).
+    self.touchView.userInteractionEnabled = NO;
+
+    self.surfaceView.hidden = YES;                  // old GLFW surface unused in SDL mode
+
+    g_sdlInputActive = YES;                         // extern flag -> input_bridge routes keys to SDL
+    [self logSDLWindowStatus];                      // diag: confirm z-order after the level change
 }
 
 - (void)launchMinecraft {
