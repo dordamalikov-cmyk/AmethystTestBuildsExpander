@@ -33,6 +33,7 @@ int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *bu
 
 static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
+static void *g_lastSDLWindowPtr = NULL;   // diag: detect SDL window recreation between polls
 
 // extern in SurfaceViewController.h; read by input_bridge_v3.m to route keys to SDL.
 BOOL g_sdlInputActive = NO;
@@ -122,8 +123,17 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
             });
             break;
         }
-        default:
+        default: {
+            // [Amethyst diag] temporary: log unhandled *window-class* events (0x200..0x22F)
+            // so the log shows whether WINDOW_SHOWN ever arrives at startup (forceshow
+            // patch) or the first real window event is a RESIZED from rotation. Full
+            // logging of every type would flood the log with input/render events.
+            uint32_t t = ((SDL3_EventType *)event)[0];
+            if (t >= 0x200 && t <= 0x22F) {
+                NSLog(@"[SDL Watch] unhandled SDL window event type: 0x%x", t);
+            }
             break;
+        }
     }
     return 0; // SDL_FALSE — keep the event in the queue
 }
@@ -627,6 +637,13 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     [self updateSavedResolution];   // sync coordinates at true surface-ready time
     [self fixSDLViewZOrder];        // keep touch controls above the SDL view
     [self configureSDLWindowLevel]; // Approach B: drop the SDL window below the launcher
+    // WINDOW_SHOWN can fire a beat before SDL's UIWindow lands in the scene's
+    // windows list, and SDL_ShowWindow may re-normalize the level afterwards —
+    // re-apply shortly so the window can't stay on top of the controls.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [self configureSDLWindowLevel];
+    });
     g_sdlSurfaceSynced = YES;
 }
 
@@ -698,11 +715,29 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 // launcher window so on-screen controls (ctrlView) stay above it and tappable.
 // Idempotent — safe to run on every SDL window event / rotation.
 - (void)configureSDLWindowLevel {
+    // UIKit window properties must be touched on the main thread. sdlSurfaceReady:
+    // already hops here from its event-filter caller, but guard anyway so a future
+    // caller (diag timer, safety fallback) can never touch UIWindow off-main.
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self configureSDLWindowLevel];
+        });
+        return;
+    }
+    NSLog(@"[SDL Config] configureSDLWindowLevel called");
     UIWindow *sdlWin = [self findSDLWindow];
-    if (!sdlWin) return;                        // no SDL window (old MC) -> no-op
+    NSLog(@"[SDL Config] found SDL window: %@, current level: %.2f",
+          sdlWin, sdlWin ? sdlWin.windowLevel : -999.0);
+    if (!sdlWin) {
+        NSLog(@"[SDL Config] SDL window not found yet — no-op (old MC, or still creating)");
+        return;
+    }
 
     if (sdlWin.windowLevel >= UIWindowLevelNormal) {
         sdlWin.windowLevel = UIWindowLevelNormal - 1;   // SDL window BELOW ours
+        NSLog(@"[SDL Config] set SDL window level to: %.2f", sdlWin.windowLevel);
+    } else {
+        NSLog(@"[SDL Config] SDL window already below ours (level %.2f)", sdlWin.windowLevel);
     }
     UIWindow *appWin = self.view.window;
     appWin.windowLevel = UIWindowLevelNormal;           // ours: Normal (belt & braces)
@@ -711,6 +746,13 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     self.rootView.backgroundColor = [UIColor clearColor];
     self.touchView.backgroundColor = [UIColor clearColor];  // remove the black backdrop so the
                                                             // SDL window (below) shows through
+    // clearColor alone doesn't guarantee transparency: UIView.opaque defaults to YES and
+    // UIKit may still rasterize the layer as fully opaque (black/undefined on Metal).
+    // Mark every layer in the chain explicitly transparent.
+    appWin.opaque = NO;
+    self.view.opaque = NO;
+    self.rootView.opaque = NO;
+    self.touchView.opaque = NO;
     // Stage 1: touchView no longer takes touches, so empty-zone touches can fall
     // through. rootView/ctrlView stay interactive (controls must keep working).
     self.touchView.userInteractionEnabled = NO;
@@ -719,6 +761,37 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 
     g_sdlInputActive = YES;                         // extern flag -> input_bridge routes keys to SDL
     [self logSDLWindowStatus];                      // diag: confirm z-order after the level change
+}
+
+// [Amethyst] Poll until SDL mode is really active (no fixed cap). The earlier diag timer
+// stopped after 6×10s, but Vulkan init can exceed that; after it stopped, the only thing
+// left that re-fired configureSDLWindowLevel was a rotation (SDL_EVENT_WINDOW_RESIZED) —
+// which is why input "came alive" only after the first rotate. Here: every 1s, if the SDL
+// window exists, apply the level (and activate the whole SDL-mode state); stop as soon as
+// g_sdlInputActive flips — that's the success signal.
+- (void)pollUntilSDLReady {
+    UIWindow *sdlWin = [self findSDLWindow];
+    if (sdlWin) {
+        // Diagnostic: a pointer change means SDL recreated its window, so the level would
+        // have to be re-applied to the fresh instance (forceshow-patch issue, not timing).
+        if ((__bridge void *)sdlWin != g_lastSDLWindowPtr) {
+            NSLog(@"[SDL Config] окно СМЕНИЛОСЬ: было %p, стало %p",
+                  g_lastSDLWindowPtr, (__bridge void *)sdlWin);
+            g_lastSDLWindowPtr = (__bridge void *)sdlWin;
+        }
+        [self configureSDLWindowLevel];
+        if (g_sdlInputActive) {
+            NSLog(@"[SDL Config] SDL-режим активирован без поворота экрана");
+            return; // success — stop polling
+        }
+    } else {
+        NSLog(@"[SDL Config] poll: окно ещё не создано");
+    }
+    __weak SurfaceViewController *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        [weakSelf pollUntilSDLReady];
+    });
 }
 
 - (void)launchMinecraft {
@@ -750,27 +823,14 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         [self installSDLSurfaceWatch];
     });
 
-    // [Amethyst diag] The 5s safety dump can fire before the game's SDL window is
-    // created (GL backend falls back to Vulkan, which can take tens of seconds), so
-    // re-log the window stack every 10s up to 60s. This catches the SDL window the
-    // moment it appears and shows whether it is visible and in front of the launcher.
+    // [Amethyst] Poll every 1s until SDL mode is actually active. configureSDLWindowLevel
+    // early-returns while the SDL window isn't in the scene's window list yet (Vulkan/Metal
+    // init can take tens of seconds), so a fixed 6×10s diag timer could stop before the
+    // window ever appears — and rotation was the only remaining re-trigger. This unbounded
+    // poll removes the "rotate once to fix it" requirement. Cheap: stops as soon as
+    // g_sdlInputActive flips.
     dispatch_async(dispatch_get_main_queue(), ^{
-        dispatch_source_t diagTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
-                                                             dispatch_get_main_queue());
-        dispatch_source_set_timer(diagTimer,
-                                  dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10.0 * NSEC_PER_SEC)),
-                                  (int64_t)(10.0 * NSEC_PER_SEC), 0);
-        __weak SurfaceViewController *weakSelf = self;
-        __block int diagTicks = 0;
-        dispatch_source_set_event_handler(diagTimer, ^{
-            if (++diagTicks > 6) {  // 10s..60s, then stop
-                dispatch_source_cancel(diagTimer);
-                return;
-            }
-            NSLog(@"[SDL Diag] tick %d/6 — window stack", diagTicks);
-            [weakSelf logSDLWindowStatus];
-        });
-        dispatch_resume(diagTimer);
+        [self pollUntilSDLReady];
     });
 }
 
@@ -1022,6 +1082,10 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         [GyroInput updateOrientation];
     } completion:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
         virtualMouseFrame = self.mousePointerView.frame;
+        // [Amethyst] Belt & braces: rotation used to be the only re-trigger for
+        // configureSDLWindowLevel (via SDL_EVENT_WINDOW_RESIZED). Re-apply explicitly so
+        // the SDL window level / SDL-mode activate even if the SDL event didn't arrive.
+        [self configureSDLWindowLevel];
     }];
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
 }
