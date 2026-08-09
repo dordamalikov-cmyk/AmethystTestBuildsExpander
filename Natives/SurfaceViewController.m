@@ -34,6 +34,7 @@ int memorystatus_control(uint32_t command, int32_t pid, uint32_t flags, void *bu
 static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
 static void *g_lastSDLWindowPtr = NULL;   // diag: detect SDL window recreation between polls
+static BOOL g_sdlPostActivationDumped = NO; // one-shot hierarchy dump after first successful SDL-mode activation
 
 // extern in SurfaceViewController.h; read by input_bridge_v3.m to route keys to SDL.
 BOOL g_sdlInputActive = NO;
@@ -570,9 +571,9 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         NSLog(@"[SDL Watch] dlopen libSDL3 failed: %s", dlerror());
     } else {
         SDL3_AddEventWatchFn addWatch = (SDL3_AddEventWatchFn)dlsym(sdl, "SDL_AddEventWatch");
-        g_sdlDelWatch = (SDL3_DelEventWatchFn)dlsym(sdl, "SDL_DelEventWatch");
-        if (!addWatch || !g_sdlDelWatch) {
-            NSLog(@"[SDL Watch] dlsym(SDL_AddEventWatch/SDL_DelEventWatch) failed");
+        g_sdlDelWatch = (SDL3_DelEventWatchFn)dlsym(sdl, "SDL_DelEventWatch"); // not exported from this dylib — NULL expected
+        if (!addWatch) {   // was !addWatch || !g_sdlDelWatch — non-exported Del killed the whole watch
+            NSLog(@"[SDL Watch] dlsym(SDL_AddEventWatch) failed");
         } else {
             if (g_sdlFilter) {   // re-registration: remove the old filter first
                 g_sdlDelWatch(g_sdlFilter, NULL);
@@ -746,6 +747,13 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     self.rootView.backgroundColor = [UIColor clearColor];
     self.touchView.backgroundColor = [UIColor clearColor];  // remove the black backdrop so the
                                                             // SDL window (below) shows through
+    // ctrlView (ControlLayout, ~763x390) is neither an ancestor above self.view nor
+    // self.view/rootView/touchView, so no earlier transparency pass touched it. It's the
+    // view closest to the user: opaque=1 with no clear backgroundColor paints black
+    // between the control buttons (ControlButton are opaque=0 individually) — the actual
+    // "black screen" sitting on top of the SDL window. Buttons' own rendering is untouched.
+    self.ctrlView.opaque = NO;
+    self.ctrlView.backgroundColor = [UIColor clearColor];
     // clearColor alone doesn't guarantee transparency: UIView.opaque defaults to YES and
     // UIKit may still rasterize the layer as fully opaque (black/undefined on Metal).
     // Mark every layer in the chain explicitly transparent.
@@ -773,6 +781,16 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 
     g_sdlInputActive = YES;                         // extern flag -> input_bridge routes keys to SDL
     [self logSDLWindowStatus];                      // diag: confirm z-order after the level change
+
+    // One-shot confirmation: dumpViewHierarchyDebug in sdlSurfaceReady runs BEFORE this
+    // method, and the 5s safety fallback used to fire while findSDLWindow was still nil
+    // (early return) — so the only full hierarchy dump in the log predates the
+    // transparency fix. Dump once here, post-activation, to verify the real opaque/bg
+    // state after every fix has been applied.
+    if (!g_sdlPostActivationDumped) {
+        g_sdlPostActivationDumped = YES;
+        [self dumpViewHierarchyDebug];
+    }
 }
 
 // [Amethyst] Poll until SDL mode is really active (no fixed cap). The earlier diag timer
