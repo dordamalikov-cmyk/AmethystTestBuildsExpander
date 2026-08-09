@@ -753,6 +753,18 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     self.view.opaque = NO;
     self.rootView.opaque = NO;
     self.touchView.opaque = NO;
+    // UITransitionView and UIDropShadowView (system wrappers UIKit inserts between the
+    // UIWindow and rootViewController.view) are opaque=1 by default, so the transparency
+    // chain was breaking ABOVE self.view. Walk up to the window and clear every ancestor
+    // (future-proof: not tied to specific class names).
+    {
+        UIView *ancestor = self.view.superview;
+        while (ancestor && ![ancestor isKindOfClass:UIWindow.class]) {
+            ancestor.opaque = NO;
+            ancestor.backgroundColor = [UIColor clearColor];
+            ancestor = ancestor.superview;
+        }
+    }
     // Stage 1: touchView no longer takes touches, so empty-zone touches can fall
     // through. rootView/ctrlView stay interactive (controls must keep working).
     self.touchView.userInteractionEnabled = NO;
@@ -835,20 +847,21 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 }
 
 - (void)fixSDLViewZOrder {
-    // Search for SDL-created views in the hierarchy and ensure ctrlView is above them
     NSLog(@"[SDL Z-Order Fix] Checking view hierarchy...");
-
-    // Check if ctrlView is still the topmost subview in rootView
-    if (self.ctrlView.superview == self.rootView) {
+    // Search for SDL-created views and ensure ctrlView sits above touchView — but NOT
+    // blindly at the very top. rootView's natural order is edge-strip -> touchView ->
+    // ctrlView -> inputTextField -> UILayoutContainerView (settings/log/swipe menu must
+    // stay above the game buttons). bringSubviewToFront permanently pinned the buttons
+    // over the menu screen; inserting only above touchView keeps "controls above the SDL
+    // view" without covering it.
+    if (self.ctrlView.superview == self.rootView && self.touchView.superview == self.rootView) {
         NSInteger ctrlIndex = [self.rootView.subviews indexOfObject:self.ctrlView];
-        NSInteger lastIndex = self.rootView.subviews.count - 1;
-
-        if (ctrlIndex != NSNotFound && ctrlIndex != lastIndex) {
-            NSLog(@"[SDL Z-Order Fix] ctrlView is NOT topmost (index %ld of %ld), bringing to front",
-                  (long)ctrlIndex, (long)lastIndex);
-            [self.rootView bringSubviewToFront:self.ctrlView];
+        NSInteger touchIndex = [self.rootView.subviews indexOfObject:self.touchView];
+        if (ctrlIndex < touchIndex) {
+            NSLog(@"[SDL Z-Order Fix] ctrlView ниже touchView — поднимаем ровно над ним");
+            [self.rootView insertSubview:self.ctrlView aboveSubview:self.touchView];
         } else {
-            NSLog(@"[SDL Z-Order Fix] ctrlView is already topmost (index %ld)", (long)ctrlIndex);
+            NSLog(@"[SDL Z-Order Fix] ctrlView уже выше touchView, остальной порядок не трогаем");
         }
     }
 
