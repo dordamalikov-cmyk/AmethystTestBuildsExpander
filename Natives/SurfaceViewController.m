@@ -14,6 +14,8 @@
 #import "input/GyroInput.h"
 #import "input/KeyboardInput.h"
 
+#import "AMPassthroughView.h"
+
 #import "JavaLauncher.h"
 #import "LauncherPreferences.h"
 #import "MinecraftResourceUtils.h"
@@ -35,6 +37,7 @@ static int currentHotbarSlot = -1;
 static GameSurfaceView* pojavWindow;
 static void *g_lastSDLWindowPtr = NULL;   // diag: detect SDL window recreation between polls
 static BOOL g_sdlPostActivationDumped = NO; // one-shot hierarchy dump after first successful SDL-mode activation
+static BOOL g_sdlHierarchyDumped = NO;      // one-shot hierarchy dump in sdlSurfaceReady: (was firing per SDL window event)
 
 // extern in SurfaceViewController.h; read by input_bridge_v3.m to route keys to SDL.
 BOOL g_sdlInputActive = NO;
@@ -153,6 +156,13 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     [self uninstallSDLSurfaceWatch];
 }
 
+- (void)loadView
+{
+    // Passthrough view: empty zones of the launcher fall through to the SDL window below,
+    // so the game still receives touches where no control button sits.
+    self.view = [[AMPassthroughView alloc] initWithFrame:UIScreen.mainScreen.bounds];
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -192,7 +202,7 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
 
     [self updateSavedResolution];
 
-    self.rootView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width + 30.0, self.view.frame.size.height)];
+    self.rootView = [[AMPassthroughView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width + 30.0, self.view.frame.size.height)];
     [self.view addSubview:self.rootView];
 
     self.ctrlView = [[ControlLayout alloc] initWithFrame:getSafeArea(self.view.frame)];
@@ -631,10 +641,12 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         dispatch_source_cancel(g_sdlSafetyTimer);
         g_sdlSafetyTimer = NULL;
     }
-    // Diagnostic: dump on every SDL window event (and the 5s safety fallback), not
-    // just once per process — so a fresh launch after the crash-chain fix always
-    // captures the game's window the moment it exists.
-    [self dumpViewHierarchyDebug];
+    // Diagnostic: one-shot dump — the safety fallback already covers a fresh launch,
+    // and dumping on every SDL window event (8x in 8s) was measurable heaviness.
+    if (!g_sdlHierarchyDumped) {
+        g_sdlHierarchyDumped = YES;
+        [self dumpViewHierarchyDebug];
+    }
     [self updateSavedResolution];   // sync coordinates at true surface-ready time
     [self fixSDLViewZOrder];        // keep touch controls above the SDL view
     [self configureSDLWindowLevel]; // Approach B: drop the SDL window below the launcher
