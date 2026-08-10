@@ -1095,7 +1095,10 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         NSMutableArray *items = [NSMutableArray new];
         for (int i = 0; i < self.menuArray.count; i++) {
             UIAction *item = [UIAction actionWithTitle:localize(self.menuArray[i], nil) image:nil identifier:nil
-                handler:^(id action) {[self didSelectMenuItem:i];}];
+                handler:^(id action) {
+                    NSLog(@"[Menu Diag] пункт меню выбран: %d", i);
+                    [self didSelectMenuItem:i];
+                }];
             [items addObject:item];
         }
         menuButton.menu = [UIMenu menuWithTitle:@"" image:nil identifier:nil
@@ -1103,6 +1106,15 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
         menuButton.showsMenuAsPrimaryAction = YES;
         self.edgeGesture.enabled = NO;
     }
+
+    // [Menu Diag] Truth about the swipe/menu path: does the active profile contain a
+    // SPECIALBTN_MENU button, and does the edge gesture end up enabled after it? Placed at
+    // the END of loadCustomControls so edgeGesture.enabled is the final value (the
+    // menu-button block above sets it to NO), not the YES from the top of the method.
+    NSLog(@"[Menu Diag] menuButton найдена в профиле: %@ (frame=%@)",
+          menuButton ? @"ДА" : @"НЕТ",
+          menuButton ? NSStringFromCGRect(menuButton.frame) : @"n/a");
+    NSLog(@"[Menu Diag] edgeGesture.enabled итог: %d", self.edgeGesture.enabled);
 }
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
