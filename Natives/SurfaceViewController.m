@@ -207,6 +207,7 @@ static int SurfaceSDLSurfaceEventFilter(void *userdata, void *event) {
     // [Passthrough] Right-edge strip (где UIScreenEdgePanGestureRecognizer распознаёт
     // начало свайпа) остаётся внутри окна лаунчера — edgeGesture должен увидеть тач.
     ((AMPassthroughView *)self.rootView).rightEdgeExclusion = 24.0;
+    NSLog(@"[AM Diag] rightEdgeExclusion выставлен: %.1f", ((AMPassthroughView *)self.rootView).rightEdgeExclusion);
 
     self.ctrlView = [[ControlLayout alloc] initWithFrame:getSafeArea(self.view.frame)];
 
