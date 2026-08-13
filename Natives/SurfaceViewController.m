@@ -1609,6 +1609,7 @@ int touchesMovedCount;
 // Equals to Android ACTION_DOWN
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    NSLog(@"[AM Diag] SurfaceViewController.touchesBegan ПОЛУЧИЛ тач — значит окно НЕ отдало его вниз!");
     [super touchesBegan:touches withEvent:event];
     int i = 0;
     for (UITouch *touch in touches) {
